@@ -1,0 +1,18 @@
+# Flutter/Dart/Pub related
+.dart_tool/
+.packages
+.pub/
+build/
+flutter_*.png
+*.iml
+*.log
+.idea/
+android/.gradle/
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+.DS_Store
+
+# Environment
+.env

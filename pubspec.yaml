@@ -1,0 +1,41 @@
+name: gymtrack_app
+description: Aplicación de gimnasio con IA y Firebase
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Firebase
+  firebase_core: ^2.30.0
+  firebase_auth: ^4.19.1
+  cloud_firestore: ^4.17.5
+  firebase_storage: ^11.7.3
+
+  # Estado y configuración
+  provider: ^6.1.2
+  flutter_dotenv: ^5.1.0
+
+  # Gráficos
+  fl_chart: ^0.64.0
+
+  # IA (Gemini)
+  google_generative_ai: ^0.4.7
+
+  # Extras
+  http: ^1.2.1
+  flutter_local_notifications: ^17.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - .env

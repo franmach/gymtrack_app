@@ -1,0 +1,4 @@
+# This is a generated file; do not edit or check into version control.
+version: 1.0.0
+channel: stable
+project_type: app
