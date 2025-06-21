@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:gymtrack_app/screens/dashboard/dashboard_screen.dart'; // Ajusta el paquete según tu pubspec.yaml
 
-/// LoginScreen es un StatefulWidget porque cambia de estado
-/// (por ejemplo, cuando mostramos el indicador de carga o un error).
+/// Pantalla de Login con Firebase Auth y navegación al Dashboard
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
 
@@ -10,41 +10,56 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-/// Esta clase maneja el estado mutable de LoginScreen
 class _LoginScreenState extends State<LoginScreen> {
   // Key para identificar y validar el formulario
   final _formKey = GlobalKey<FormState>();
 
-  // Controladores para leer el texto ingresado en los TextFormField
+  // Controladores para leer el texto ingresado
   final TextEditingController _emailCtrl = TextEditingController();
-  final TextEditingController _passCtrl  = TextEditingController();
+  final TextEditingController _passCtrl = TextEditingController();
 
-  // Variables de estado para indicar si estamos cargando o hay un error
+  // Estado de carga y mensaje de error
   bool _loading = false;
   String? _errorMessage;
 
-  /// Este método se dispara al presionar el botón "Entrar"
+  /// Se dispara al presionar "Entrar"
   Future<void> _submit() async {
-    // 1) Validamos que todos los campos del Form sean válidos
+    // 1) Validamos el formulario
     if (!_formKey.currentState!.validate()) return;
 
-    // 2) Entramos en estado de "cargando"
     setState(() {
       _loading = true;
       _errorMessage = null;
     });
 
     try {
-      // 3) Intentamos autenticar con FirebaseAuth
+      // 2) Intentamos autenticar con Firebase
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailCtrl.text.trim(),
         password: _passCtrl.text,
       );
-      // 4) Si tiene éxito, navegamos al dashboard y reemplazamos esta pantalla
-      if (!mounted) return;                      // Seguridad: ¿el widget sigue en el árbol?
-      Navigator.pushReplacementNamed(context, '/dashboard');
+
+      if (!mounted) return;
+
+      // 3) Mostramos un SnackBar de confirmación
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('👍 Login exitoso'),
+          duration: Duration(seconds: 2), // Duración configurable
+        ),
+      );
+
+      // 4) Breve espera para que el usuario vea el mensaje
+      await Future.delayed(const Duration(seconds: 2));
+
+      // 5) Navegamos al Dashboard reemplazando el LoginScreen
+      print('🔜 Navegando al Dashboard');
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const DashboardScreen()),
+      );
     } on FirebaseAuthException catch (e) {
-      // 5) Manejamos errores específicos de autenticación
+      // 6) Manejamos errores de autenticación específicos
       switch (e.code) {
         case 'user-not-found':
           _errorMessage = 'Usuario no encontrado';
@@ -56,19 +71,16 @@ class _LoginScreenState extends State<LoginScreen> {
           _errorMessage = 'Error: ${e.message}';
       }
     } catch (e) {
-      // 6) Cualquier otro tipo de error (red, etc.)
-      _errorMessage = 'Error de red o inesperado';
+      // 7) Otros errores
+      _errorMessage = 'Error inesperado: $e';
     } finally {
-      // 7) Siempre desactivamos el indicador de carga al finalizar
-      if (mounted) {
-        setState(() => _loading = false);
-      }
+      // 8) Desactivamos el indicador de carga
+      if (mounted) setState(() => _loading = false);
     }
   }
 
   @override
   void dispose() {
-    // Liberamos los controladores para evitar fugas de memoria
     _emailCtrl.dispose();
     _passCtrl.dispose();
     super.dispose();
@@ -76,73 +88,62 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Scaffold: estructura básica con AppBar y body
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Iniciar Sesión'),
-      ),
+      appBar: AppBar(title: const Text('Iniciar Sesión')),
       body: Padding(
-        padding: const EdgeInsets.all(16), // Espaciado interno
+        padding: const EdgeInsets.all(16),
         child: Form(
-          key: _formKey,                    // Asociamos el Form al _formKey
+          key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // === Campo de Email ===
+              // Campo Email
               TextFormField(
-                controller: _emailCtrl,                // Vincula el controlador
+                controller: _emailCtrl,
                 keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(
-                  labelText: 'Email',                  // Etiqueta
-                  prefixIcon: Icon(Icons.email),       // Icono
+                  labelText: 'Email',
+                  prefixIcon: Icon(Icons.email),
                 ),
                 validator: (value) {
-                  // Valida que no esté vacío y contenga '@'
                   if (value == null || value.isEmpty) {
                     return 'Ingresa tu email';
                   }
                   if (!value.contains('@')) {
                     return 'Email inválido';
                   }
-                  return null; // Campo válido
+                  return null;
                 },
               ),
-
               const SizedBox(height: 16),
-
-              // === Campo de Contraseña ===
+              // Campo Contraseña
               TextFormField(
-                controller: _passCtrl,                 // Vincula el controlador
-                obscureText: true,                     // Oculta el texto
+                controller: _passCtrl,
+                obscureText: true,
                 decoration: const InputDecoration(
                   labelText: 'Contraseña',
                   prefixIcon: Icon(Icons.lock),
                 ),
                 validator: (value) {
-                  // Valida longitud mínima
                   if (value == null || value.isEmpty) {
                     return 'Ingresa tu contraseña';
                   }
                   if (value.length < 6) {
                     return 'Mínimo 6 caracteres';
                   }
-                  return null; // Campo válido
+                  return null;
                 },
               ),
-
               const SizedBox(height: 24),
-
-              // === Mensaje de error ===
+              // Mensaje de error
               if (_errorMessage != null)
                 Text(
                   _errorMessage!,
                   style: const TextStyle(color: Colors.red),
                   textAlign: TextAlign.center,
                 ),
-
               const SizedBox(height: 8),
-
-              // === Botón de envío ===
+              // Botón Entrar
               ElevatedButton(
                 onPressed: _loading ? null : _submit,
                 child: _loading
