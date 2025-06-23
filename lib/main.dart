@@ -3,7 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/auth/login_screen.dart';
-
+import 'screens/perfil/perfil_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,7 +24,11 @@ class GymTrackApp extends StatelessWidget {
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
       ),
-      home: const HomeScreen(), // Pantalla principal con botón
+      home: const HomeScreen(),
+      routes: {
+        '/profile': (context) => PerfilScreen(),
+        //   '/settings': (context) => Placeholder(),
+      },
     );
   }
 }
@@ -38,7 +42,8 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Bienvenido a GymTrack')),
       body: Center(
         child: Column(
-          mainAxisSize: MainAxisSize.min, // Para que la columna ocupe solo el espacio de los botones
+          mainAxisSize: MainAxisSize
+              .min, // Para que la columna ocupe solo el espacio de los botones
           children: [
             // Botón de registro
             ElevatedButton(
@@ -46,7 +51,8 @@ class HomeScreen extends StatelessWidget {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                  MaterialPageRoute(
+                      builder: (context) => const RegisterScreen()),
                 );
               },
             ),
@@ -69,4 +75,3 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
-
