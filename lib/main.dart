@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'screens/auth/register_screen.dart';
+import 'screens/auth/login_screen.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,16 +37,36 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Bienvenido a GymTrack')),
       body: Center(
-        child: ElevatedButton(
-          child: const Text('Registrarse'),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const RegisterScreen()),
-            );
-          },
+        child: Column(
+          mainAxisSize: MainAxisSize.min, // Para que la columna ocupe solo el espacio de los botones
+          children: [
+            // Botón de registro
+            ElevatedButton(
+              child: const Text('Registrarse'),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                );
+              },
+            ),
+
+            const SizedBox(height: 16), // Separador entre botones
+
+            // Botón de login
+            ElevatedButton(
+              child: const Text('Iniciar Sesión'),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                );
+              },
+            ),
+          ],
         ),
       ),
     );
   }
 }
+
