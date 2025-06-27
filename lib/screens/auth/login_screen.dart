@@ -1,6 +1,9 @@
+// lib/screens/auth/login_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:gymtrack_app/screens/dashboard/dashboard_screen.dart'; // Ajusta el paquete según tu pubspec.yaml
+import 'package:gymtrack_app/screens/dashboard/dashboard_screen.dart';
+import 'package:gymtrack_app/screens/auth/forgotPassword_screen.dart'; 
 
 /// Pantalla de Login con Firebase Auth y navegación al Dashboard
 class LoginScreen extends StatefulWidget {
@@ -41,25 +44,24 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
 
-      // 3) Mostramos un SnackBar de confirmación
+      // 3) Mostramos SnackBar de confirmación
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('👍 Login exitoso'),
-          duration: Duration(seconds: 2), // Duración configurable
+          duration: Duration(seconds: 2),
         ),
       );
 
-      // 4) Breve espera para que el usuario vea el mensaje
-      await Future.delayed(const Duration(seconds: 2));
+      // 4) Esperamos un breve intervalo
+      await Future.delayed(const Duration(seconds: 1));
 
       // 5) Navegamos al Dashboard reemplazando el LoginScreen
-      print('🔜 Navegando al Dashboard');
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const DashboardScreen()),
       );
     } on FirebaseAuthException catch (e) {
-      // 6) Manejamos errores de autenticación específicos
+      // 6) Manejamos errores de autenticación
       switch (e.code) {
         case 'user-not-found':
           _errorMessage = 'Usuario no encontrado';
@@ -115,7 +117,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   return null;
                 },
               ),
+
               const SizedBox(height: 16),
+
               // Campo Contraseña
               TextFormField(
                 controller: _passCtrl,
@@ -134,7 +138,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 24),
+
+              const SizedBox(height: 8),
+
+              const SizedBox(height: 16),
+
               // Mensaje de error
               if (_errorMessage != null)
                 Text(
@@ -142,7 +150,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: const TextStyle(color: Colors.red),
                   textAlign: TextAlign.center,
                 ),
+
               const SizedBox(height: 8),
+
               // Botón Entrar
               ElevatedButton(
                 onPressed: _loading ? null : _submit,
@@ -157,7 +167,25 @@ class _LoginScreenState extends State<LoginScreen> {
                       )
                     : const Text('Entrar'),
               ),
-            ],
+
+              
+
+              // Enlace de recuperación de contraseña
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ForgotPasswordScreen(),
+                      ),
+                    );
+                  },
+                  child: const Text('¿Olvidaste tu contraseña?'),
+                ),
+              ),
+            ],           
           ),
         ),
       ),
