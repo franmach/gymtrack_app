@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:gymtrack_app/services/auth_service.dart';
 import 'package:gymtrack_app/models/usuario.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gymtrack_app/screens/dashboard/dashboard_screen.dart';
 
 class RegisterScreen extends StatefulWidget {

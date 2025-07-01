@@ -7,7 +7,7 @@ import 'package:gymtrack_app/screens/auth/forgotPassword_screen.dart';
 
 /// Pantalla de Login con Firebase Auth y navegación al Dashboard
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
