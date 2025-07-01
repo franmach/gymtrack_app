@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 /// Pantalla para recuperación de contraseña (RF3)
 class ForgotPasswordScreen extends StatefulWidget {
-  const ForgotPasswordScreen({Key? key}) : super(key: key);
+  const ForgotPasswordScreen({super.key});
 
   @override
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
