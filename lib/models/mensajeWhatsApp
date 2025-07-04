@@ -1,0 +1,31 @@
+class MensajeWhatsApp {
+  final String id;
+  final String entrenadorId;
+  final String mensaje;
+  final DateTime fechaEnvio;
+  final String medio;
+
+  MensajeWhatsApp({
+    required this.id,
+    required this.entrenadorId,
+    required this.mensaje,
+    required this.fechaEnvio,
+    required this.medio,
+  });
+
+  factory MensajeWhatsApp.fromMap(Map<String, dynamic> map) => MensajeWhatsApp(
+        id: map['id'] as String,
+        entrenadorId: map['entrenador_id'] as String,
+        mensaje: map['mensaje'] as String,
+        fechaEnvio: (map['fecha_envio'] as Timestamp).toDate(),
+        medio: map['medio'] as String,
+      );
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'entrenador_id': entrenadorId,
+        'mensaje': mensaje,
+        'fecha_envio': Timestamp.fromDate(fechaEnvio),
+        'medio': medio,
+      };
+}
