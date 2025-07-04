@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'completar_perfil.dart';
 
 /// 🔧 Pantalla principal del perfil de usuario
 class PerfilScreen extends StatefulWidget {
@@ -38,6 +39,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
   @override
   Widget build(BuildContext context) {
     final User? user = FirebaseAuth.instance.currentUser;
+    final uid = FirebaseAuth.instance.currentUser!.uid;
 
     return Scaffold(
       appBar: AppBar(
@@ -57,6 +59,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 }
 
                 final userData = snapshot.data?.data() as Map<String, dynamic>?;
+                final bool incompleto = userData?['perfilCompleto'] == false;
 
                 // 📦 Obtener datos del usuario
                 final nombre = userData?['nombre'] ?? '';
@@ -306,6 +309,23 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                 icon: const Icon(Icons.edit),
                                 label: const Text('Editar Perfil'),
                               ),
+
+                        if (incompleto)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 16.0),
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        CompletarPerfilScreen(uid: uid),
+                                  ),
+                                );
+                              },
+                              child: const Text('Completar perfil'),
+                            ),
+                          )
                       ],
                     ),
                   ),
