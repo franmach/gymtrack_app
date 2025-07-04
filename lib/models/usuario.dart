@@ -6,7 +6,8 @@ class Usuario {
   final int edad;
   final double peso;
   final double altura;
-  final int disponibilidad;
+  final int disponibilidadSemanal;
+  final int minPorSesion;
   final String nivelExperiencia;
   final String objetivo;
   final String rol;                  // alumno, admin, entrenador.
@@ -20,7 +21,8 @@ class Usuario {
     required this.edad,
     required this.peso,
     required this.altura,
-    required this.disponibilidad,
+    required this.disponibilidadSemanal,
+    required this.minPorSesion,
     required this.nivelExperiencia,
     required this.objetivo,
     required this.rol,
@@ -35,10 +37,11 @@ class Usuario {
       'edad': edad,
       'peso': peso,
       'altura': altura,
-      'disponibilidad': disponibilidad,
+      'disponibilidadSemanal': disponibilidadSemanal,
+      'minPorSesion': minPorSesion,
       'nivelExperiencia': nivelExperiencia,
       'objetivo': objetivo,
-      'rol': rol,
+      'rol': 'alumno',
       'fechaRegistro': fechaRegistro.toIso8601String(),
     };
   }

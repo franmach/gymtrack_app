@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gymtrack_app/services/auth_service.dart';
-import 'package:gymtrack_app/models/usuario.dart';
-import 'package:gymtrack_app/screens/dashboard/dashboard_screen.dart';
+import 'package:gymtrack_app/models/usuario_basico.dart';
+import 'package:gymtrack_app/screens/perfil/completar_perfil.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -16,19 +16,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String email = '';
   String nombre = '';
   String apellido = '';
-  int edad = 0;
-  double peso = 0;
-  double altura = 0;
-  final List<String> nivelesExperiencia = [
-    'Principiante (0–1 año)',
-    'Intermedio (1–3 años)',
-    'Avanzado (3+ años)',
-  ];
-  String? nivelSeleccionado;
-  String objetivoEntrenamiento = '';
-  int disponibilidadSemanal = 0;
   String password = '';
+  int edad = 0;
   bool obscureText = true;
+  DateTime? fechaNacimiento;
+
+  int _calcularEdad(DateTime fecha) {
+    final hoy = DateTime.now();
+    int edad = hoy.year - fecha.year;
+    if (hoy.month < fecha.month ||
+        (hoy.month == fecha.month && hoy.day < fecha.day)) {
+      edad--;
+    }
+    return edad;
+  }
 
   void _registrarUsuario() async {
     final esValido = _registerKey.currentState!.validate();
@@ -36,54 +37,66 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     _registerKey.currentState!.save();
 
+    if (fechaNacimiento == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Debes seleccionar tu fecha de nacimiento'),
+        ),
+      );
+      return;
+    }
+
     try {
       final authService = AuthService();
+      final credenciales = await authService.registrarConEmail(
+        email: email,
+        password: password,
+      );
 
-      // Construir el modelo de usuario con los datos capturados
-      final nuevoUsuario = Usuario(
-        uid: '', // Se asignará en Firestore por el `uid` del Auth
+      final uid = credenciales.user!.uid;
+      final edad = _calcularEdad(fechaNacimiento!);
+
+      final usuarioBasico = UsuarioBasico(
+        uid: uid,
         nombre: nombre,
         apellido: apellido,
-        email: email,
+        fechaNacimiento: fechaNacimiento,
         edad: edad,
-        peso: peso,
-        altura: altura,
-        disponibilidad: disponibilidadSemanal,
-        nivelExperiencia: nivelSeleccionado ?? '',
-        objetivo: objetivoEntrenamiento,
-        rol: 'Alumno', // Se le asigna alumno por defecto
+        email: email,
+        perfilCompleto: false,
         fechaRegistro: DateTime.now(),
       );
 
-      // Llamar al servicio
-      await authService.registrarUsuario(
-        email: email,
-        password: password,
-        usuario: nuevoUsuario,
-      );
+      await authService.guardarUsuarioBasico(usuarioBasico);
 
-      // Mostrar mensaje de éxito o redirigir
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Cuenta creada con éxito')),
+        const SnackBar(content: Text('Registro exitoso')),
       );
 
-      // Redirigir a pantalla principal o login
-      // 4) Esperamos un breve intervalo
       await Future.delayed(const Duration(seconds: 1));
 
-      // 5) Navegamos al Dashboard reemplazando el LoginScreen
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const DashboardScreen()),
+        MaterialPageRoute(builder: (_) => CompletarPerfilScreen(uid: uid)),
       );
     } catch (e) {
-      // Mostrar error
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('👍 Registro exitoso'),
-          duration: Duration(seconds: 2),
-        ),
+        SnackBar(content: Text('Error: ${e.toString()}')),
       );
+    }
+  }
+
+  Future<void> _seleccionarFechaNacimiento() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(2000),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      setState(() {
+        fechaNacimiento = picked;
+      });
     }
   }
 
@@ -146,32 +159,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       onSaved: (value) => apellido = value ??
                           '', // cuando valido todo, si estan los campos bien guarda
                     ),
-                    SizedBox(height: 16),
-                    TextFormField(
-                      //Ingreso edad ---------------------------------------------------------------------------------------
-                      decoration: InputDecoration(
-                        labelText: 'Edad',
-                        prefixIcon: Icon(Icons.timeline),
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.number,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Campo obligatorio';
-                        }
-
-                        final numero = int.tryParse(value);
-                        if (numero == null) {
-                          return 'Debe ser un número entero';
-                        }
-                        if (numero <= 0) {
-                          return 'Debe ser mayor a cero';
-                        }
-                        return null;
-                      },
-                      onSaved: (value) => edad = int.tryParse(value ?? '0') ??
-                          0, // cuando valido todo, si estan los campos bien guarda
+                    ElevatedButton(
+                      onPressed: _seleccionarFechaNacimiento,
+                      child: Text(fechaNacimiento == null
+                          ? 'Seleccionar fecha de nacimiento'
+                          : 'Fecha: ${fechaNacimiento!.toLocal().toString().split(' ')[0]}'),
                     ),
+                    const SizedBox(height: 16),
                     SizedBox(height: 16),
                     TextFormField(
                       //Ingreso email---------------------------------------------------------------------------------------
@@ -225,134 +219,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       },
                       onSaved: (value) => password = value ??
                           '', // cuando valido todo, si estan los campos bien guarda
-                    ),
-                    SizedBox(height: 16),
-                    TextFormField(
-                      //Ingreso peso ---------------------------------------------------------------------------------------
-                      decoration: InputDecoration(
-                        labelText: 'Peso',
-                        prefixIcon: Icon(Icons.fitness_center),
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.number,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Campo obligatorio';
-                        }
-
-                        final pesoNum = double.tryParse(value);
-                        if (pesoNum == null) {
-                          return 'Debe ser un número válido';
-                        }
-
-                        if (pesoNum < 30 || pesoNum > 300) {
-                          return 'Ingrese un peso realista (30–300 kg)';
-                        }
-                        return null;
-                      },
-                      onSaved: (value) => peso = double.tryParse(
-                              value ?? '0') ??
-                          0.0, // cuando valido todo, si estan los campos bien guarda
-                    ),
-                    SizedBox(height: 16),
-
-                    TextFormField(
-                      //Ingreso altura ---------------------------------------------------------------------------------------
-                      decoration: InputDecoration(
-                        labelText: 'Altura',
-                        prefixIcon: Icon(Icons.fitness_center),
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.number,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Campo obligatorio';
-                        }
-
-                        final alturaNum = double.tryParse(value);
-                        if (alturaNum == null) {
-                          return 'Debe ser un número válido';
-                        }
-
-                        if (alturaNum < 0.5 || alturaNum > 2.5) {
-                          return 'Ingrese una altura realista (0.5–2.5 m)';
-                        }
-
-                        return null;
-                      },
-                      onSaved: (value) => altura = double.tryParse(
-                              value ?? '0') ??
-                          0.0, // cuando valido todo, si estan los campos bien guarda
-                    ),
-                    SizedBox(height: 16),
-                    //Ingreso nivel de experiencia---------------------------------------------------------------------------------------
-                    DropdownButtonFormField<String>(
-                      decoration: InputDecoration(
-                        labelText: 'Nivel de experiencia',
-                        prefixIcon: Icon(Icons.auto_graph_outlined),
-                        border: OutlineInputBorder(),
-                      ),
-                      value: nivelSeleccionado,
-                      items: nivelesExperiencia.map((String nivel) {
-                        return DropdownMenuItem(
-                          value: nivel,
-                          child: Text(nivel),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          nivelSeleccionado = value;
-                        });
-                      },
-                      validator: (value) => value == null
-                          ? 'Seleccione su nivel de experiencia'
-                          : null,
-                      onSaved: (value) => nivelSeleccionado = value,
-                    ),
-                    SizedBox(height: 16),
-
-                    //Ingreso objetivo---------------------------------------------------------------------------------------
-                    TextFormField(
-                      decoration: InputDecoration(
-                        labelText: 'Objetivo',
-                        hintText: 'Ej: Ganar músculo, bajar de peso...',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.flag_outlined),
-                      ),
-                      onSaved: (value) => objetivoEntrenamiento = value ?? '',
-                      validator: (value) => value == null || value.isEmpty
-                          ? 'Ingrese su objetivo'
-                          : null,
-                    ),
-                    SizedBox(height: 16),
-                    TextFormField(
-                      //Ingreso edad ---------------------------------------------------------------------------------------
-                      decoration: InputDecoration(
-                        labelText: 'Disponibilidad semanal',
-                        hintText: 'Entre 1 y 7 dias',
-                        prefixIcon: Icon(Icons.calendar_month),
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.number,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Campo obligatorio';
-                        }
-
-                        final numero = int.tryParse(value);
-                        if (numero == null) {
-                          return 'Debe ser un número';
-                        }
-
-                        if (numero < 1 || numero > 7) {
-                          return 'Debe estar entre 1 y 7 días';
-                        }
-
-                        return null;
-                      },
-                      onSaved: (value) => disponibilidadSemanal = int.tryParse(
-                              value ?? '0') ??
-                          0, // cuando valido todo, si estan los campos bien guarda
                     ),
                     SizedBox(height: 16),
                     ElevatedButton(
