@@ -20,6 +20,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   int edad = 0;
   bool obscureText = true;
   DateTime? fechaNacimiento;
+  String? errorFechaNacimiento;
 
   int _calcularEdad(DateTime fecha) {
     final hoy = DateTime.now();
@@ -54,14 +55,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       final uid = credenciales.user!.uid;
-      final edad = _calcularEdad(fechaNacimiento!);
+      final edadCalculada = _calcularEdad(fechaNacimiento!);
+
+      if (edadCalculada < 10) {
+        setState(() {
+          errorFechaNacimiento =
+              'Debes tener al menos 10 años para registrarte.';
+        });
+        return;
+      } else {
+        setState(() {
+          errorFechaNacimiento = null;
+        });
+      }
 
       final usuarioBasico = UsuarioBasico(
         uid: uid,
         nombre: nombre,
         apellido: apellido,
         fechaNacimiento: fechaNacimiento,
-        edad: edad,
+        edad: edadCalculada,
         email: email,
         perfilCompleto: false,
         fechaRegistro: DateTime.now(),
@@ -159,13 +172,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       onSaved: (value) => apellido = value ??
                           '', // cuando valido todo, si estan los campos bien guarda
                     ),
+                    SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: _seleccionarFechaNacimiento,
                       child: Text(fechaNacimiento == null
                           ? 'Seleccionar fecha de nacimiento'
                           : 'Fecha: ${fechaNacimiento!.toLocal().toString().split(' ')[0]}'),
                     ),
-                    const SizedBox(height: 16),
+                    Visibility(
+                      visible: errorFechaNacimiento != null,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Text(
+                          errorFechaNacimiento ?? '',
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    ),
                     SizedBox(height: 16),
                     TextFormField(
                       //Ingreso email---------------------------------------------------------------------------------------

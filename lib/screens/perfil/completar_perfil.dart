@@ -111,44 +111,43 @@ class _CompletarPerfilScreenState extends State<CompletarPerfilScreen> {
     }
   }
 
-Future<void> generarRutinaDesdePerfil(Usuario usuario) async {
-  print('Llamando a Gemini...');
-  final ai = AiService();
+  Future<void> generarRutinaDesdePerfil(Usuario usuario) async {
+    print('Llamando a Gemini...');
+    final ai = AiService();
 
-  try {
-    final rutinaJson = await ai.generarRutinaComoJson(
-      edad: usuario.edad,
-      peso: usuario.peso,
-      altura: usuario.altura,
-      nivel: usuario.nivelExperiencia,
-      objetivo: usuario.objetivo,
-      dias: usuario.disponibilidadSemanal,
-      minPorSesion: usuario.minPorSesion,
-      genero: usuario.genero,
-      lesiones: usuario.lesiones ?? '',
-    );
+    try {
+      final rutinaJson = await ai.generarRutinaComoJson(
+        edad: usuario.edad,
+        peso: usuario.peso,
+        altura: usuario.altura,
+        nivel: usuario.nivelExperiencia,
+        objetivo: usuario.objetivo,
+        dias: usuario.disponibilidadSemanal,
+        minPorSesion: usuario.minPorSesion,
+        genero: usuario.genero,
+        lesiones: usuario.lesiones ?? '',
+      );
 
-    await FirebaseFirestore.instance
-        .collection('rutinas')
-        .doc(usuario.uid)
-        .set({
-      'uid': usuario.uid,
-      'fecha_generacion': DateTime.now().toIso8601String(),
-      'objetivo': usuario.objetivo,
-      'nivel': usuario.nivelExperiencia,
-      'dias_por_semana': usuario.disponibilidadSemanal,
-      'min_por_sesion': usuario.minPorSesion,
-      'es_actual': true,
-      'rutina': rutinaJson['rutina'],
-    });
+      await FirebaseFirestore.instance
+          .collection('rutinas')
+          .doc(usuario.uid)
+          .set({
+        'uid': usuario.uid,
+        'fecha_generacion': DateTime.now().toIso8601String(),
+        'objetivo': usuario.objetivo,
+        'nivel': usuario.nivelExperiencia,
+        'dias_por_semana': usuario.disponibilidadSemanal,
+        'min_por_sesion': usuario.minPorSesion,
+        'es_actual': true,
+        'rutina': rutinaJson['rutina'],
+      });
 
-    print('✅ Rutina generada y guardada correctamente');
-  } catch (e) {
-    print('❌ Error al generar rutina: $e');
-    rethrow;
+      print('✅ Rutina generada y guardada correctamente');
+    } catch (e) {
+      print('❌ Error al generar rutina: $e');
+      rethrow;
+    }
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
