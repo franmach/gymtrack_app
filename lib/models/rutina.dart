@@ -1,3 +1,5 @@
+import 'package:gymtrack_app/models/diaEntrenamiento.dart';
+
 class Rutina {
   final String id;
   final String usuarioId;
@@ -6,6 +8,8 @@ class Rutina {
   final String objetivo;
   final String dificultad;
   final int diasPorSemana;
+  final double horasPorSesion;
+  final List<DiaEntrenamiento> dias;
 
   Rutina({
     required this.id,
@@ -15,25 +19,19 @@ class Rutina {
     required this.objetivo,
     required this.dificultad,
     required this.diasPorSemana,
+    required this.horasPorSesion,
+    required this.dias,
   });
 
-  factory Rutina.fromMap(Map<String, dynamic> m) => Rutina(
-        id: m['id'] as String,
-        usuarioId: m['usuario_id'] as String,
-        fechaGeneracion: DateTime.parse(m['fecha_generacion'] as String),
-        esActual: m['es_actual'] as bool,
-        objetivo: m['objetivo'] as String,
-        dificultad: m['dificultad'] as String,
-        diasPorSemana: m['dias_por_semana'] as int,
-      );
-
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'usuario_id': usuarioId,
-        'fecha_generacion': fechaGeneracion.toIso8601String(),
-        'es_actual': esActual,
-        'objetivo': objetivo,
-        'dificultad': dificultad,
-        'dias_por_semana': diasPorSemana,
-      };
+    'id': id,
+    'usuario_id': usuarioId,
+    'fecha_generacion': fechaGeneracion.toIso8601String(),
+    'es_actual': esActual,
+    'objetivo': objetivo,
+    'dificultad': dificultad,
+    'dias_por_semana': diasPorSemana,
+    'horas_por_sesion': horasPorSesion,
+    'dias': dias.map((d) => d.toMap()).toList(),
+  };
 }
