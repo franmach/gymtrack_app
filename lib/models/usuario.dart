@@ -1,5 +1,5 @@
 class Usuario {
-  final String uid;                  // generado por Firebase Auth
+  final String uid;
   final String nombre;
   final String apellido;
   final String email;
@@ -10,8 +10,10 @@ class Usuario {
   final int minPorSesion;
   final String nivelExperiencia;
   final String objetivo;
-  final String rol;                  // alumno, admin, entrenador.
-  final DateTime fechaRegistro;      
+  final String genero;
+  final String lesiones;
+  final String rol;
+  final DateTime fechaRegistro;
 
   Usuario({
     required this.uid,
@@ -25,9 +27,13 @@ class Usuario {
     required this.minPorSesion,
     required this.nivelExperiencia,
     required this.objetivo,
+    required this.genero,
+    required this.lesiones,
     required this.rol,
     required this.fechaRegistro,
   });
+
+  double get horasPorSesion => minPorSesion / 60.0;
 
   Map<String, dynamic> toMap() {
     return {
@@ -41,7 +47,9 @@ class Usuario {
       'minPorSesion': minPorSesion,
       'nivelExperiencia': nivelExperiencia,
       'objetivo': objetivo,
-      'rol': 'alumno',
+      'genero': genero,
+      'lesiones': lesiones,
+      'rol': 'alumno', // Asumiendo que el rol es siempre "alumno"
       'fechaRegistro': fechaRegistro.toIso8601String(),
     };
   }

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gymtrack_app/screens/perfil/perfil_screen.dart';
+import 'dart:convert';
+import 'package:gymtrack_app/models/usuario.dart';
+import 'package:gymtrack_app/services/ai_service.dart';
 
 class CompletarPerfilScreen extends StatefulWidget {
   final String uid;
@@ -63,6 +66,36 @@ class _CompletarPerfilScreenState extends State<CompletarPerfilScreen> {
         'perfilCompleto': true,
       });
 
+      //Obtener datos desde Firestore
+      final doc = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(widget.uid)
+          .get();
+      final data = doc.data();
+
+      //Construir el objeto Usuario
+      final usuario = Usuario(
+        uid: widget.uid,
+        nombre: data?['nombre'] ?? '',
+        apellido: data?['apellido'] ?? '',
+        email: data?['email'] ?? '',
+        edad: data?['edad'] ?? 0,
+        peso: peso,
+        altura: altura,
+        disponibilidadSemanal: disponibilidad,
+        minPorSesion: minPorSesion,
+        nivelExperiencia: nivelExperiencia,
+        objetivo: objetivo,
+        genero: genero,
+        lesiones: lesiones,
+        rol: data?['rol'] ?? 'alumno',
+        fechaRegistro:
+            DateTime.tryParse(data?['fechaRegistro'] ?? '') ?? DateTime.now(),
+      );
+
+// 3. Generar rutina con IA
+      await generarRutinaDesdePerfil(usuario);
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Perfil completado con éxito')),
       );
@@ -75,6 +108,44 @@ class _CompletarPerfilScreenState extends State<CompletarPerfilScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al guardar perfil: $e')),
       );
+    }
+  }
+
+  Future<void> generarRutinaDesdePerfil(Usuario usuario) async {
+    print('Llamando a Gemini...');
+    final ai = AiService();
+
+    try {
+      final rutinaJson = await ai.generarRutinaComoJson(
+        edad: usuario.edad,
+        peso: usuario.peso,
+        altura: usuario.altura,
+        nivel: usuario.nivelExperiencia,
+        objetivo: usuario.objetivo,
+        dias: usuario.disponibilidadSemanal,
+        minPorSesion: usuario.minPorSesion,
+        genero: usuario.genero,
+        lesiones: usuario.lesiones ?? '',
+      );
+
+      await FirebaseFirestore.instance
+          .collection('rutinas')
+          .doc(usuario.uid)
+          .set({
+        'uid': usuario.uid,
+        'fecha_generacion': DateTime.now().toIso8601String(),
+        'objetivo': usuario.objetivo,
+        'nivel': usuario.nivelExperiencia,
+        'dias_por_semana': usuario.disponibilidadSemanal,
+        'min_por_sesion': usuario.minPorSesion,
+        'es_actual': true,
+        'rutina': rutinaJson['rutina'],
+      });
+
+      print('✅ Rutina generada y guardada correctamente');
+    } catch (e) {
+      print('❌ Error al generar rutina: $e');
+      rethrow;
     }
   }
 
@@ -163,7 +234,7 @@ class _CompletarPerfilScreenState extends State<CompletarPerfilScreen> {
                     TextFormField(
                       decoration: const InputDecoration(
                           labelText:
-                              'Duración aproximada por sesión (en horas)'),
+                              'Duración aproximada por sesión (en minutos)'),
                       keyboardType: TextInputType.number,
                       validator: (value) {
                         final num = int.tryParse(value ?? '');

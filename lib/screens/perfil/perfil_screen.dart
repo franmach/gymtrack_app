@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'completar_perfil.dart';
+import 'package:gymtrack_app/screens/rutina/rutina_screen.dart';
 
 /// 🔧 Pantalla principal del perfil de usuario
 class PerfilScreen extends StatefulWidget {
@@ -324,6 +325,21 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                 );
                               },
                               child: const Text('Completar perfil'),
+                            ),
+                          ),
+                        // Si el perfil está completo, mostrar botón para ver rutina
+                            if(!incompleto)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 16.0),
+                              child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) =>
+                                  const RutinaScreen()),
+                                );
+                              },
+                              child: const Text('Ver mi rutina'),
                             ),
                           )
                       ],
