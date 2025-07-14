@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:gymtrack_app/main.dart'; // Importa HomeScreen para regresar al inicio
+import 'package:gymtrack_app/screens/historial/historial_screen.dart';
 
 /// DashboardScreen: Pantalla principal tras iniciar sesión
 class DashboardScreen extends StatelessWidget {
@@ -36,6 +37,20 @@ class DashboardScreen extends StatelessWidget {
                 Navigator.pushNamed(context, '/profile');
               },
               child: const Text('Perfil'),
+            ),
+            const SizedBox(height: 12),
+
+            // Botón para acceder al historial de entrenamientos
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const HistorialScreen(),
+                  ),
+                );
+              },
+              child: const Text('Historial'),
             ),
             const SizedBox(height: 12),
 

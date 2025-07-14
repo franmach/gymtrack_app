@@ -7,6 +7,7 @@ class Entrenamiento {
   final DateTime fecha;
   final int duracion;
   final String estado;
+  final List<Map<String, dynamic>> ejercicios;
 
   Entrenamiento({
     required this.id,
@@ -15,6 +16,7 @@ class Entrenamiento {
     required this.fecha,
     required this.duracion,
     required this.estado,
+    required this.ejercicios,
   });
 
   factory Entrenamiento.fromMap(Map<String, dynamic> map) => Entrenamiento(
@@ -24,6 +26,7 @@ class Entrenamiento {
         fecha: (map['fecha'] as Timestamp).toDate(),
         duracion: map['duracion'] as int,
         estado: map['estado'] as String,
+        ejercicios: List<Map<String, dynamic>>.from(map['ejercicios'] as List),
       );
 
   Map<String, dynamic> toMap() => {
@@ -33,5 +36,6 @@ class Entrenamiento {
         'fecha': Timestamp.fromDate(fecha),
         'duracion': duracion,
         'estado': estado,
+        'ejercicios': ejercicios,
       };
 }
