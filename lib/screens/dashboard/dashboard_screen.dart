@@ -1,72 +1,93 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:gymtrack_app/main.dart'; // Importa HomeScreen para regresar al inicio
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:gymtrack_app/main.dart';
+import 'package:gymtrack_app/services/firestore_routine_service.dart';
+import 'package:gymtrack_app/screens/session/day_selection_screen.dart';
 
 /// DashboardScreen: Pantalla principal tras iniciar sesión
 class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key});
+  const DashboardScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // Depuración: confirmar que el build se ejecuta
-    print('✅ DashboardScreen.build() ejecutado');
+    final uid = FirebaseAuth.instance.currentUser!.uid;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dashboard'),
-      ),
+      appBar: AppBar(title: const Text('Dashboard')),
       body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min, // Ocupa sólo el espacio necesario
-          children: [
-            // Mensaje de bienvenida
-            const Text(
-              'Bienvenido al Dashboard',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 24),
+        child: FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+          future: FirebaseFirestore.instance
+              .collection('rutinas')
+              .doc(uid)
+              .get(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const CircularProgressIndicator();
+            }
 
-            // Botón Perfil (ejemplo)
-            ElevatedButton(
-              onPressed: () {
-                // Navegación a pantalla de perfil (debe existir o comentar)
-                Navigator.pushNamed(context, '/profile');
-              },
-              child: const Text('Perfil'),
-            ),
-            const SizedBox(height: 12),
+            if (!snapshot.hasData || !snapshot.data!.exists) {
+              return const Text(
+                'Aún no tienes una rutina generada.',
+                textAlign: TextAlign.center,
+              );
+            }
 
-            // Botón Configuraciones (ejemplo)
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/settings');
-              },
-              child: const Text('Configuraciones'),
-            ),
-            const SizedBox(height: 24),
-
-            // Botón de Cerrar Sesión
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent,
-              ),
-              onPressed: () async {
-                // 1) Cerrar sesión de Firebase
-                await FirebaseAuth.instance.signOut();
-
-                // 2) Redirigir a HomeScreen y limpiar historial
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const HomeScreen()),
-                  (Route<dynamic> route) => false,
-                );
-              },
-              child: const Text('Cerrar Sesión'),
-            ),
-          ],
+            // Rutina existente: mostrar opciones
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => DaySelectionScreen(
+                          service: FirestoreRoutineService(),
+                          userId: uid,
+                        ),
+                      ),
+                    );
+                  },
+                  child: const Text('Iniciar entrenamiento'),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Bienvenido al Dashboard',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () => Navigator.pushNamed(context, '/profile'),
+                  child: const Text('Perfil'),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: () => Navigator.pushNamed(context, '/settings'),
+                  child: const Text('Configuraciones'),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                  ),
+                  onPressed: () async {
+                    await FirebaseAuth.instance.signOut();
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const HomeScreen(),
+                      ),
+                      (route) => false,
+                    );
+                  },
+                  child: const Text('Cerrar Sesión'),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
