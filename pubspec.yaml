@@ -21,6 +21,9 @@ dependencies:
   # Detección de estado de la red (online/offline)
   connectivity_plus: ^4.0.0  # Permite reaccionar a cambios de conexión
 
+  vibration: ^1.7.4         # Para vibración
+  audioplayers: 6.5.0      # Para reproducir sonidos
+
   # Estado y configuración
   provider: ^6.1.2
   flutter_dotenv: ^5.1.0

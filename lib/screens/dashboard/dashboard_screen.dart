@@ -4,8 +4,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gymtrack_app/main.dart';
 import 'package:gymtrack_app/services/firestore_routine_service.dart';
 import 'package:gymtrack_app/screens/session/day_selection_screen.dart';
+import 'package:gymtrack_app/screens/session/timer_screen.dart';
 
 /// DashboardScreen: Pantalla principal tras iniciar sesión
+typedef DocSnapshot = DocumentSnapshot<Map<String, dynamic>>;
+
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({Key? key}) : super(key: key);
 
@@ -16,16 +19,12 @@ class DashboardScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Dashboard')),
       body: Center(
-        child: FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-          future: FirebaseFirestore.instance
-              .collection('rutinas')
-              .doc(uid)
-              .get(),
+        child: FutureBuilder<DocSnapshot>(
+          future: FirebaseFirestore.instance.collection('rutinas').doc(uid).get(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const CircularProgressIndicator();
             }
-
             if (!snapshot.hasData || !snapshot.data!.exists) {
               return const Text(
                 'Aún no tienes una rutina generada.',
@@ -33,10 +32,10 @@ class DashboardScreen extends StatelessWidget {
               );
             }
 
-            // Rutina existente: mostrar opciones
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Botón de iniciar entrenamiento
                 ElevatedButton(
                   onPressed: () {
                     Navigator.of(context).push(
@@ -50,13 +49,27 @@ class DashboardScreen extends StatelessWidget {
                   },
                   child: const Text('Iniciar entrenamiento'),
                 ),
+
                 const SizedBox(height: 24),
+
+                // Botón para acceder al temporizador
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const TimerScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.timer),
+                  label: const Text('Temporizador'),
+                ),
+
+                const SizedBox(height: 32),
+
                 const Text(
                   'Bienvenido al Dashboard',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
@@ -70,16 +83,12 @@ class DashboardScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
-                  ),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
                   onPressed: () async {
                     await FirebaseAuth.instance.signOut();
                     Navigator.pushAndRemoveUntil(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => const HomeScreen(),
-                      ),
+                      MaterialPageRoute(builder: (_) => const HomeScreen()),
                       (route) => false,
                     );
                   },
