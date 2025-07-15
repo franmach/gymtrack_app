@@ -52,7 +52,7 @@ class HistorialScreen extends StatelessWidget {
         usuarioId: 'uid_angel',
         rutinaId: 'rutina1',
         fecha: DateTime.now()
-            .subtract(const Duration(days: 9)), // Fuera de la semana
+            .subtract(const Duration(days: 7)), // Fuera de la semana
         duracion: 30,
         estado: 'completo',
         ejercicios: [
@@ -87,6 +87,49 @@ class HistorialScreen extends StatelessWidget {
     final total = entrenamientosDeLaSemana.length;
     final porcentajeCumplido =
         total > 0 ? (completas / total * 100).round() : 0;
+
+    // Calcular progreso general
+    final totalSesiones = entrenamientos.length;
+    final totalCompletas =
+        entrenamientos.where((e) => e.estado == 'completo').length;
+
+// Agrupar por semana (lunes a domingo)
+    Map<int, int> sesionesPorSemana = {};
+    for (var ent in entrenamientos) {
+      // Usamos la semana del año como clave
+      int week;
+      try {
+        week = int.parse(DateFormat('w').format(ent.fecha));
+      } catch (e) {
+        week = 0; // Valor neutro si falla la conversión
+      }
+      sesionesPorSemana[week] = (sesionesPorSemana[week] ?? 0) + 1;
+    }
+    final mejorSemana = sesionesPorSemana.values.isNotEmpty
+        ? sesionesPorSemana.values.reduce((a, b) => a > b ? a : b)
+        : 0;
+
+    // Calcular racha de días consecutivos entrenando
+    final fechasOrdenadas = entrenamientos
+        .map((e) => DateUtils.dateOnly(e.fecha))
+        .toSet()
+        .toList()
+      ..sort();
+
+    int rachaMaxima = 0;
+    int rachaActual = 1;
+
+    for (int i = 1; i < fechasOrdenadas.length; i++) {
+      final anterior = fechasOrdenadas[i - 1];
+      final actual = fechasOrdenadas[i];
+
+      if (actual.difference(anterior).inDays == 1) {
+        rachaActual += 1;
+        rachaMaxima = rachaActual > rachaMaxima ? rachaActual : rachaMaxima;
+      } else {
+        rachaActual = 1;
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Historial de Entrenamientos')),
@@ -220,6 +263,16 @@ class HistorialScreen extends StatelessWidget {
               ],
             );
           }),
+          const SizedBox(height: 24),
+          Text(
+            'Progreso general',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 8),
+          Text('Total de sesiones: $totalSesiones'),
+          Text('Sesiones completadas: $totalCompletas'),
+          Text('Mejor semana: $mejorSemana sesiones'),
+          Text('Racha más larga de días seguidos entrenando: $rachaMaxima'),
         ],
       ),
     );

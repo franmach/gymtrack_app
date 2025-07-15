@@ -14,6 +14,7 @@ class Usuario {
   final String lesiones;
   final String rol;
   final DateTime fechaRegistro;
+  final String? gimnasioId;
 
   Usuario({
     required this.uid,
@@ -31,6 +32,7 @@ class Usuario {
     required this.lesiones,
     required this.rol,
     required this.fechaRegistro,
+    this.gimnasioId,
   });
 
   double get horasPorSesion => minPorSesion / 60.0;
@@ -51,6 +53,7 @@ class Usuario {
       'lesiones': lesiones,
       'rol': 'alumno', // Asumiendo que el rol es siempre "alumno"
       'fechaRegistro': fechaRegistro.toIso8601String(),
+      'gimnasioId': gimnasioId,
     };
   }
 }

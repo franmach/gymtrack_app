@@ -64,6 +64,7 @@ class _CompletarPerfilScreenState extends State<CompletarPerfilScreen> {
         'genero': genero,
         'lesiones': lesiones,
         'perfilCompleto': true,
+        'gimnasioId': 'gimnasio_point',
       });
 
       //Obtener datos desde Firestore
@@ -91,6 +92,7 @@ class _CompletarPerfilScreenState extends State<CompletarPerfilScreen> {
         rol: data?['rol'] ?? 'alumno',
         fechaRegistro:
             DateTime.tryParse(data?['fechaRegistro'] ?? '') ?? DateTime.now(),
+        gimnasioId: 'gimnasio_point', // Asignar un gimnasio por defecto
       );
 
 // 3. Generar rutina con IA
@@ -140,6 +142,7 @@ class _CompletarPerfilScreenState extends State<CompletarPerfilScreen> {
         'min_por_sesion': usuario.minPorSesion,
         'es_actual': true,
         'rutina': rutinaJson['rutina'],
+        'gimnasioId': 'gimnasio_point',
       });
 
       print('✅ Rutina generada y guardada correctamente');
