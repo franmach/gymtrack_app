@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:gymtrack_app/screens/historial/historial_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gymtrack_app/main.dart';
 import 'package:gymtrack_app/services/firestore_routine_service.dart';
@@ -52,6 +53,30 @@ class DashboardScreen extends StatelessWidget {
 
                 const SizedBox(height: 24),
 
+
+            // Botón para acceder al historial de entrenamientos
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const HistorialScreen(),
+                  ),
+                );
+              },
+              child: const Text('Historial'),
+            ),
+            const SizedBox(height: 12),
+
+            // Botón Configuraciones (ejemplo)
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/settings');
+              },
+              child: const Text('Configuraciones'),
+            ),
+            const SizedBox(height: 24),
+
                 // Botón para acceder al temporizador
                 ElevatedButton.icon(
                   onPressed: () {
@@ -64,6 +89,7 @@ class DashboardScreen extends StatelessWidget {
                   icon: const Icon(Icons.timer),
                   label: const Text('Temporizador'),
                 ),
+
 
                 const SizedBox(height: 32),
 

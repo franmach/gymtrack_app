@@ -113,6 +113,41 @@ class _CompletarPerfilScreenState extends State<CompletarPerfilScreen> {
         'genero': genero,
         'lesiones': lesionesProcesadas,
         'perfilCompleto': true,
+
+        'gimnasioId': 'gimnasio_point',
+      });
+
+      //Obtener datos desde Firestore
+      final doc = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(widget.uid)
+          .get();
+      final data = doc.data();
+
+      //Construir el objeto Usuario
+      final usuario = Usuario(
+        uid: widget.uid,
+        nombre: data?['nombre'] ?? '',
+        apellido: data?['apellido'] ?? '',
+        email: data?['email'] ?? '',
+        edad: data?['edad'] ?? 0,
+        peso: peso,
+        altura: altura,
+        disponibilidadSemanal: disponibilidad,
+        minPorSesion: minPorSesion,
+        nivelExperiencia: nivelExperiencia,
+        objetivo: objetivo,
+        genero: genero,
+        lesiones: lesiones,
+        rol: data?['rol'] ?? 'alumno',
+        fechaRegistro:
+            DateTime.tryParse(data?['fechaRegistro'] ?? '') ?? DateTime.now(),
+        gimnasioId: 'gimnasio_point', // Asignar un gimnasio por defecto
+      );
+
+// 3. Generar rutina con IA
+      await generarRutinaDesdePerfil(usuario);
+
         if (urlImagen != null) 'imagen_url': urlImagen,
       });
 

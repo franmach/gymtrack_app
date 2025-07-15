@@ -14,6 +14,7 @@ class Usuario {
   final List<String>? lesiones;
   final String rol;
   final DateTime fechaRegistro;
+  final String? gimnasioId;
 
   Usuario({
     required this.uid,
@@ -31,6 +32,7 @@ class Usuario {
     this.lesiones,
     required this.rol,
     required this.fechaRegistro,
+    this.gimnasioId,
   });
 
   factory Usuario.fromMap(Map<String, dynamic> data, String uid) {
@@ -73,6 +75,7 @@ class Usuario {
       'lesiones': lesiones ?? [],
       'rol': rol,
       'fechaRegistro': fechaRegistro.toIso8601String(),
+      'gimnasioId': gimnasioId,
     };
   }
 }
