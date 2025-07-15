@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'completar_perfil.dart';
-import 'package:gymtrack_app/screens/rutina/rutina_screen.dart';
+import 'package:gymtrack_app/screens/rutina/mis_rutinas_screen.dart';
 
 /// 🔧 Pantalla principal del perfil de usuario
 class PerfilScreen extends StatefulWidget {
@@ -23,7 +23,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
   final TextEditingController alturaController = TextEditingController();
   final TextEditingController disponibilidadController =
       TextEditingController();
-  final TextEditingController objetivoController = TextEditingController();
 
   // 🎯 Lista de niveles de experiencia para el Dropdown
   final List<String> nivelesExperiencia = [
@@ -32,7 +31,14 @@ class _PerfilScreenState extends State<PerfilScreen> {
     'Avanzado (3+ años)',
   ];
 
+  final List<String> objetivos = [
+    'Bajar de peso',
+    'Ganar músculo',
+    'Tonificar',
+    'Mejorar resistencia',
+  ];
   String? nivelSeleccionado;
+  String? objetivoSeleccionado;
 
   // ✅ Clave del formulario para validaciones
   final _formKey = GlobalKey<FormState>();
@@ -63,6 +69,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 final bool incompleto = userData?['perfilCompleto'] == false;
 
                 // 📦 Obtener datos del usuario
+
                 final nombre = userData?['nombre'] ?? '';
                 final apellido = userData?['apellido'] ?? '';
                 final email = user.email ?? '';
@@ -71,8 +78,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 final altura = userData?['altura']?.toString() ?? '';
                 final disponibilidad =
                     userData?['disponibilidad']?.toString() ?? '';
+                if (!modoEdicion && objetivoSeleccionado == null) {
+                  objetivoSeleccionado = userData?['objetivo'] ?? '';
+                }
                 final nivel = userData?['nivelExperiencia'] ?? '';
-                final objetivo = userData?['objetivo'] ?? '';
                 final imagenUrl = userData?['imagen_url'];
 
                 // 🧠 Llenar campos si no se está editando
@@ -82,7 +91,6 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   pesoController.text = peso;
                   alturaController.text = altura;
                   disponibilidadController.text = disponibilidad;
-                  objetivoController.text = objetivo;
                   nivelSeleccionado = nivel;
                 }
 
@@ -97,11 +105,13 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         Center(
                           child: CircleAvatar(
                             radius: 60,
-                            backgroundImage: imagenUrl != null
+                            backgroundImage: imagenUrl != null &&
+                                    imagenUrl.isNotEmpty
                                 ? NetworkImage(imagenUrl)
+                                    as ImageProvider<Object>
                                 : const AssetImage(
                                         'assets/images/profile_placeholder.png')
-                                    as ImageProvider,
+                                    as ImageProvider<Object>,
                           ),
                         ),
 
@@ -188,19 +198,19 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         modoEdicion
                             ? CustomTextField(
                                 controller: disponibilidadController,
-                                label: 'Disponibilidad (horas por semana)',
+                                label: 'Días disponibles por semana (1-7)',
                                 validator: (value) {
                                   final num = int.tryParse(value ?? '');
                                   if (value == null || value.isEmpty)
                                     return 'Campo obligatorio';
-                                  if (num == null || num < 1 || num > 168)
-                                    return 'Debe ser entre 1 y 168 horas';
+                                  if (num == null || num < 1 || num > 7)
+                                    return 'Debe ser un número entre 1 y 7';
                                   return null;
                                 },
                               )
                             : ProfileField(
-                                label: 'Disponibilidad',
-                                value: '$disponibilidad horas por semana',
+                                label: 'Disponibilidad semanal',
+                                value: '$disponibilidad dias por semana',
                               ),
 
                         // 📊 Nivel de experiencia (Dropdown)
@@ -234,15 +244,30 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
                         // 🥅 Objetivo
                         modoEdicion
-                            ? CustomTextField(
-                                controller: objetivoController,
-                                label: 'Objetivo',
+                            ? DropdownButtonFormField<String>(
+                                decoration: const InputDecoration(
+                                    labelText: 'Objetivo',
+                                    border: OutlineInputBorder()),
+                                value: objetivoSeleccionado,
+                                items: objetivos.map((String value) {
+                                  return DropdownMenuItem<String>(
+                                    value: value,
+                                    child: Text(value),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    objetivoSeleccionado = value!;
+                                  });
+                                },
                                 validator: (value) =>
                                     value == null || value.isEmpty
                                         ? 'Campo obligatorio'
                                         : null,
                               )
-                            : ProfileField(label: 'Objetivo', value: objetivo),
+                            : ProfileField(
+                                label: 'Objetivo',
+                                value: objetivoSeleccionado ?? ''),
 
                         const SizedBox(height: 12),
 
@@ -271,8 +296,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                           'disponibilidad': int.parse(
                                               disponibilidadController.text),
                                           'objetivo':
-                                              objetivoController.text.trim(),
-                                          'nivelExperiencia': nivelSeleccionado,
+                                              objetivoSeleccionado ?? '',
+                                          'nivelExperiencia':
+                                              nivelSeleccionado ?? '',
                                         });
 
                                         setState(() {
@@ -328,18 +354,18 @@ class _PerfilScreenState extends State<PerfilScreen> {
                             ),
                           ),
                         // Si el perfil está completo, mostrar botón para ver rutina
-                            if(!incompleto)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 16.0),
-                              child: ElevatedButton(
+                        if (!incompleto)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 16.0),
+                            child: ElevatedButton(
                               onPressed: () {
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(builder: (_) =>
-                                  const RutinaScreen()),
+                                  MaterialPageRoute(
+                                      builder: (_) => const MisRutinasScreen()),
                                 );
                               },
-                              child: const Text('Ver mi rutina'),
+                              child: const Text('Ver mis rutinas'),
                             ),
                           )
                       ],

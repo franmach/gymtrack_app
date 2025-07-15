@@ -29,21 +29,26 @@ class AiService {
     required String lesiones,
   }) async {
     final prompt = '''
-Generame una rutina semanal de entrenamiento para un usuario con los siguientes datos:
+Generá una rutina de entrenamiento semanal con los siguientes datos del usuario:
 
-Edad: $edad años
-Peso: $peso kg
-Altura: $altura cm
-Género: $genero
-Nivel de experiencia: $nivel
-Objetivo físico: $objetivo
-Días disponibles por semana: $dias
-Duración por sesión: $minPorSesion minutos
-Lesiones: $lesiones
+Edad: $edad años  
+Peso: $peso kg  
+Altura: $altura cm  
+Género: $genero  
+Nivel de experiencia: $nivel  
+Objetivo físico: $objetivo  
+Solo puede entrenar $dias días a la semana  
+Duración máxima por sesión: $minPorSesion minutos  
+Lesiones o limitaciones: $lesiones
 
-Respondé solamente con un JSON **válido**, sin explicaciones ni formato markdown, sin comentarios, sin comillas raras ni backticks. Solo el JSON puro.
+⚠️ Importante:
+- Respondé ÚNICAMENTE con un JSON válido.
+- Todos los valores deben estar entre comillas si no son números (por ejemplo: "Máximo posible", "8-12").
+- No uses comillas inclinadas, ni backticks, ni Markdown.
+- No uses comas finales después del último ítem en arrays.
+- Evitá rangos tipo 8-12. Usá strings, ejemplo: "8 a 12".
 
-Formato esperado:
+Ejemplo de respuesta esperada:
 {
   "rutina": [
     {
@@ -53,7 +58,7 @@ Formato esperado:
           "nombre": "Sentadillas",
           "grupo_muscular": "Piernas",
           "series": 4,
-          "repeticiones": 12,
+          "repeticiones": "12",
           "descanso_segundos": 60
         }
       ]
@@ -61,6 +66,7 @@ Formato esperado:
   ]
 }
 ''';
+
 
     final response = await _model.generateContent([Content.text(prompt)]);
     final output = response.text;
@@ -73,7 +79,45 @@ Formato esperado:
       final parsedJson = jsonDecode(output);
       return parsedJson;
     } catch (e) {
-      throw FormatException('La respuesta no es un JSON válido: $e\n\nContenido:\n$output');
+      throw FormatException(
+          'La respuesta no es un JSON válido: $e\n\nContenido:\n$output');
     }
   }
+
+  Future<List<String>> analizarLesionesConGemini(String texto) async {
+  final prompt = '''
+Analiza el siguiente texto ingresado por un usuario sobre sus lesiones o limitaciones físicas. 
+Extraé una lista clara de lesiones o zonas afectadas, lo más breve y específica posible.
+Si no se detecta ninguna lesión relevante, respondé con una lista vacía.
+
+Texto:
+"$texto"
+
+Respondé SOLO con una lista en formato JSON, sin ningún formato markdown, sin comentarios ni comillas extrañas. Solo:
+
+["lesión 1", "lesión 2"]
+''';
+
+  final response = await _model.generateContent([Content.text(prompt)]);
+  String? output = response.text;
+
+  if (output == null) {
+    throw Exception('Respuesta vacía de Gemini');
+  }
+
+  // 🔧 Limpiar posibles backticks y markdown
+  output = output.replaceAll('```json', '').replaceAll('```', '').trim();
+
+  try {
+    final decoded = jsonDecode(output);
+    if (decoded is List) {
+      return decoded.map((e) => e.toString()).toList();
+    } else {
+      return [];
+    }
+  } catch (e) {
+    print('❌ Error al parsear JSON de lesiones: $e\nContenido:\n$output');
+    return [];
+  }
+}
 }

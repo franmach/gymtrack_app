@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gymtrack_app/screens/perfil/perfil_screen.dart';
-import 'dart:convert';
-import 'package:gymtrack_app/models/usuario.dart';
 import 'package:gymtrack_app/services/ai_service.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class CompletarPerfilScreen extends StatefulWidget {
   final String uid;
@@ -23,8 +24,10 @@ class _CompletarPerfilScreenState extends State<CompletarPerfilScreen> {
   String nivelExperiencia = '';
   String objetivo = '';
   String genero = '';
-  String lesiones = '';
+  String textoLesiones = '';
+  List<String>? lesionesProcesadas;
   int minPorSesion = 0;
+  File? imagenSeleccionada;
 
   final niveles = [
     'Principiante (0–1 año)',
@@ -46,9 +49,55 @@ class _CompletarPerfilScreenState extends State<CompletarPerfilScreen> {
     'Prefiero no decirlo',
   ];
 
+  Future<void> _seleccionarImagen() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      setState(() {
+        imagenSeleccionada = File(pickedFile.path);
+      });
+    }
+  }
+
+  Future<void> tomarFotoConCamara() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.camera);
+
+    if (pickedFile != null) {
+      setState(() {
+        imagenSeleccionada = File(pickedFile.path);
+      });
+    } else {
+      print('No se seleccionó ninguna imagen.');
+    }
+  }
+
   Future<void> _guardarPerfil() async {
     if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
+
+    final ai = AiService();
+    lesionesProcesadas = await ai.analizarLesionesConGemini(textoLesiones);
+
+    String? urlImagen;
+
+    // ✅ SUBIR IMAGEN A STORAGE SI HAY UNA
+    try {
+      if (imagenSeleccionada != null && imagenSeleccionada!.existsSync()) {
+        final storageRef = FirebaseStorage.instance
+            .ref()
+            .child('usuarios')
+            .child('${widget.uid}.jpg');
+
+        final uploadTask = storageRef.putFile(imagenSeleccionada!);
+
+        final snapshot = await uploadTask.whenComplete(() => null);
+        urlImagen = await snapshot.ref.getDownloadURL();
+      }
+    } catch (e) {
+      print("❌ Error al subir imagen: $e");
+    }
 
     try {
       await FirebaseFirestore.instance
@@ -62,8 +111,9 @@ class _CompletarPerfilScreenState extends State<CompletarPerfilScreen> {
         'nivelExperiencia': nivelExperiencia,
         'objetivo': objetivo,
         'genero': genero,
-        'lesiones': lesiones,
+        'lesiones': lesionesProcesadas,
         'perfilCompleto': true,
+
         'gimnasioId': 'gimnasio_point',
       });
 
@@ -98,6 +148,9 @@ class _CompletarPerfilScreenState extends State<CompletarPerfilScreen> {
 // 3. Generar rutina con IA
       await generarRutinaDesdePerfil(usuario);
 
+        if (urlImagen != null) 'imagen_url': urlImagen,
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Perfil completado con éxito')),
       );
@@ -110,45 +163,6 @@ class _CompletarPerfilScreenState extends State<CompletarPerfilScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al guardar perfil: $e')),
       );
-    }
-  }
-
-  Future<void> generarRutinaDesdePerfil(Usuario usuario) async {
-    print('Llamando a Gemini...');
-    final ai = AiService();
-
-    try {
-      final rutinaJson = await ai.generarRutinaComoJson(
-        edad: usuario.edad,
-        peso: usuario.peso,
-        altura: usuario.altura,
-        nivel: usuario.nivelExperiencia,
-        objetivo: usuario.objetivo,
-        dias: usuario.disponibilidadSemanal,
-        minPorSesion: usuario.minPorSesion,
-        genero: usuario.genero,
-        lesiones: usuario.lesiones ?? '',
-      );
-
-      await FirebaseFirestore.instance
-          .collection('rutinas')
-          .doc(usuario.uid)
-          .set({
-        'uid': usuario.uid,
-        'fecha_generacion': DateTime.now().toIso8601String(),
-        'objetivo': usuario.objetivo,
-        'nivel': usuario.nivelExperiencia,
-        'dias_por_semana': usuario.disponibilidadSemanal,
-        'min_por_sesion': usuario.minPorSesion,
-        'es_actual': true,
-        'rutina': rutinaJson['rutina'],
-        'gimnasioId': 'gimnasio_point',
-      });
-
-      print('✅ Rutina generada y guardada correctamente');
-    } catch (e) {
-      print('❌ Error al generar rutina: $e');
-      rethrow;
     }
   }
 
@@ -167,6 +181,25 @@ class _CompletarPerfilScreenState extends State<CompletarPerfilScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: tomarFotoConCamara,
+                          icon: const Icon(Icons.camera_alt),
+                          label: const Text('Tomar foto'),
+                        ),
+                        const SizedBox(width: 10),
+                        ElevatedButton.icon(
+                          onPressed: _seleccionarImagen,
+                          icon: const Icon(Icons.photo),
+                          label: const Text('Galería'),
+                        ),
+                      ],
+                    ),
+                    if (imagenSeleccionada != null)
+                      Image.file(imagenSeleccionada!, height: 150),
+                    const SizedBox(height: 16),
                     TextFormField(
                       decoration: const InputDecoration(labelText: 'Peso (kg)'),
                       keyboardType: TextInputType.number,
@@ -265,7 +298,7 @@ class _CompletarPerfilScreenState extends State<CompletarPerfilScreen> {
                       decoration: const InputDecoration(
                           labelText: 'Limitaciones físicas o lesiones'),
                       maxLines: 3,
-                      onSaved: (value) => lesiones = value ?? '',
+                      onSaved: (value) => textoLesiones = value?.trim() ?? '',
                     ),
                     SizedBox(height: 32),
                     ElevatedButton(
