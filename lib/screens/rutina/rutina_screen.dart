@@ -3,7 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class RutinaScreen extends StatefulWidget {
-  const RutinaScreen({super.key});
+  final String rutinaId;
+
+  const RutinaScreen({super.key, required this.rutinaId});
 
   @override
   State<RutinaScreen> createState() => _RutinaScreenState();
@@ -18,16 +20,18 @@ class _RutinaScreenState extends State<RutinaScreen> {
     _cargarRutina();
   }
 
-  Future<void> _cargarRutina() async {
-    final uid = FirebaseAuth.instance.currentUser!.uid;
-    final doc = await FirebaseFirestore.instance.collection('rutinas').doc(uid).get();
+Future<void> _cargarRutina() async {
+  final doc = await FirebaseFirestore.instance
+      .collection('rutinas')
+      .doc(widget.rutinaId)
+      .get();
 
-    if (doc.exists) {
-      setState(() {
-        rutina = doc.data();
-      });
-    }
+  if (doc.exists) {
+    setState(() {
+      rutina = doc.data();
+    });
   }
+}
   @override
   Widget build(BuildContext context) {
     if (rutina == null) {

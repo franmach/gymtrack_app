@@ -12,7 +12,6 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _registerKey = GlobalKey<FormState>();
-  // Acá van: GlobalKey<FormState>, controladores, variables, etc.
   String email = '';
   String nombre = '';
   String apellido = '';
@@ -93,8 +92,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         MaterialPageRoute(builder: (_) => CompletarPerfilScreen(uid: uid)),
       );
     } catch (e) {
+      final errorMsg = e.toString().replaceAll('Exception: ', '');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
+        SnackBar(content: Text(errorMsg)),
       );
     }
   }

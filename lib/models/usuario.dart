@@ -11,7 +11,7 @@ class Usuario {
   final String nivelExperiencia;
   final String objetivo;
   final String genero;
-  final String lesiones;
+  final List<String>? lesiones;
   final String rol;
   final DateTime fechaRegistro;
 
@@ -28,15 +28,37 @@ class Usuario {
     required this.nivelExperiencia,
     required this.objetivo,
     required this.genero,
-    required this.lesiones,
+    this.lesiones,
     required this.rol,
     required this.fechaRegistro,
   });
 
-  double get horasPorSesion => minPorSesion / 60.0;
+  factory Usuario.fromMap(Map<String, dynamic> data, String uid) {
+    return Usuario(
+      uid: uid,
+      nombre: data['nombre'] ?? '',
+      apellido: data['apellido'] ?? '',
+      email: data['email'] ?? '',
+      edad: data['edad'] ?? 0,
+      peso: (data['peso'] ?? 0).toDouble(),
+      altura: (data['altura'] ?? 0).toDouble(),
+      disponibilidadSemanal: data['disponibilidadSemanal'] ?? 0,
+      minPorSesion: data['minPorSesion'] ?? 0,
+      nivelExperiencia: data['nivelExperiencia'] ?? '',
+      objetivo: data['objetivo'] ?? '',
+      genero: data['genero'] ?? '',
+      lesiones: (data['lesiones'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toList(),
+      rol: data['rol'] ?? 'alumno',
+      fechaRegistro:
+          DateTime.tryParse(data['fechaRegistro'] ?? '') ?? DateTime.now(),
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {
+      'uid': uid,
       'nombre': nombre,
       'apellido': apellido,
       'email': email,
@@ -48,8 +70,8 @@ class Usuario {
       'nivelExperiencia': nivelExperiencia,
       'objetivo': objetivo,
       'genero': genero,
-      'lesiones': lesiones,
-      'rol': 'alumno', // Asumiendo que el rol es siempre "alumno"
+      'lesiones': lesiones ?? [],
+      'rol': rol,
       'fechaRegistro': fechaRegistro.toIso8601String(),
     };
   }
