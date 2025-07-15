@@ -15,6 +15,15 @@ dependencies:
   cloud_firestore: ^4.17.5
   firebase_storage: ^11.7.3
 
+  # Dependencias para oersistencia lcal 
+  shared_preferences: ^2.1.0 # Guarda pares clave–valor simples
+
+  # Detección de estado de la red (online/offline)
+  connectivity_plus: ^4.0.0  # Permite reaccionar a cambios de conexión
+
+  vibration: ^1.7.4         # Para vibración
+  audioplayers: 6.5.0      # Para reproducir sonidos
+
   # Estado y configuración
   provider: ^6.1.2
   flutter_dotenv: ^5.1.0
