@@ -21,7 +21,8 @@ class DashboardScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Dashboard')),
       body: Center(
         child: FutureBuilder<DocSnapshot>(
-          future: FirebaseFirestore.instance.collection('rutinas').doc(uid).get(),
+          future:
+              FirebaseFirestore.instance.collection('rutinas').doc(uid).get(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const CircularProgressIndicator();
@@ -36,6 +37,12 @@ class DashboardScreen extends StatelessWidget {
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                const Text(
+                  'Bienvenido al Dashboard',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 24),
+
                 // Botón de iniciar entrenamiento
                 ElevatedButton(
                   onPressed: () {
@@ -50,32 +57,21 @@ class DashboardScreen extends StatelessWidget {
                   },
                   child: const Text('Iniciar entrenamiento'),
                 ),
+                const SizedBox(height: 12),
 
-                const SizedBox(height: 24),
-
-
-            // Botón para acceder al historial de entrenamientos
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const HistorialScreen(),
-                  ),
-                );
-              },
-              child: const Text('Historial'),
-            ),
-            const SizedBox(height: 12),
-
-            // Botón Configuraciones (ejemplo)
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/settings');
-              },
-              child: const Text('Configuraciones'),
-            ),
-            const SizedBox(height: 24),
+                // Botón para acceder al historial de entrenamientos
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const HistorialScreen(),
+                      ),
+                    );
+                  },
+                  child: const Text('Historial'),
+                ),
+                const SizedBox(height: 12),
 
                 // Botón para acceder al temporizador
                 ElevatedButton.icon(
@@ -89,27 +85,18 @@ class DashboardScreen extends StatelessWidget {
                   icon: const Icon(Icons.timer),
                   label: const Text('Temporizador'),
                 ),
+                const SizedBox(height: 12),
 
-
-                const SizedBox(height: 32),
-
-                const Text(
-                  'Bienvenido al Dashboard',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: () => Navigator.pushNamed(context, '/profile'),
                   child: const Text('Perfil'),
                 ),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: () => Navigator.pushNamed(context, '/settings'),
-                  child: const Text('Configuraciones'),
-                ),
+
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                  ),
                   onPressed: () async {
                     await FirebaseAuth.instance.signOut();
                     Navigator.pushAndRemoveUntil(

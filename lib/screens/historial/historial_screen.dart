@@ -1,279 +1,305 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-import 'package:gymtrack_app/models/entrenamiento.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'dart:math';
 
-/// Pantalla que muestra el historial de entrenamientos del usuario.
-/// Cada ítem puede expandirse para mostrar los ejercicios realizados.
-class HistorialScreen extends StatelessWidget {
+class HistorialScreen extends StatefulWidget {
   const HistorialScreen({super.key});
 
-  /// Simula una lista de entrenamientos con ejercicios incluidos
-  List<Entrenamiento> obtenerEntrenamientosSimulados() {
-    return [
-      Entrenamiento(
-        id: 'ent1',
-        usuarioId: 'uid_angel',
-        rutinaId: 'rutina1',
-        fecha: DateTime.now().subtract(const Duration(days: 1)), // Ayer
-        duracion: 60,
-        estado: 'completo',
-        ejercicios: [
-          {'nombre': 'Sentadillas', 'reps': 12, 'hecho': true},
-          {'nombre': 'Press banca', 'reps': 10, 'hecho': true},
-        ],
-      ),
-      Entrenamiento(
-        id: 'ent2',
-        usuarioId: 'uid_angel',
-        rutinaId: 'rutina1',
-        fecha: DateTime.now().subtract(const Duration(days: 3)), // Hace 3 días
-        duracion: 45,
-        estado: 'incompleto',
-        ejercicios: [
-          {'nombre': 'Remo', 'reps': 10, 'hecho': false},
-          {'nombre': 'Bicicleta fija', 'reps': 0, 'hecho': false},
-        ],
-      ),
-      Entrenamiento(
-        id: 'ent3',
-        usuarioId: 'uid_angel',
-        rutinaId: 'rutina1',
-        fecha: DateTime.now().subtract(const Duration(days: 6)), // Hace 6 días
-        duracion: 50,
-        estado: 'completo',
-        ejercicios: [
-          {'nombre': 'Peso muerto', 'reps': 8, 'hecho': true},
-          {'nombre': 'Dominadas', 'reps': 6, 'hecho': true},
-        ],
-      ),
-      Entrenamiento(
-        id: 'ent4',
-        usuarioId: 'uid_angel',
-        rutinaId: 'rutina1',
-        fecha: DateTime.now()
-            .subtract(const Duration(days: 7)), // Fuera de la semana
-        duracion: 30,
-        estado: 'completo',
-        ejercicios: [
-          {'nombre': 'Abdominales', 'reps': 20, 'hecho': true},
-          {'nombre': 'Soga', 'reps': 0, 'hecho': true},
-        ],
-      ),
-    ];
+  @override
+  State<HistorialScreen> createState() => _HistorialScreenState();
+}
+
+class _HistorialScreenState extends State<HistorialScreen> {
+  List<Map<String, dynamic>> sesiones = [];
+  bool cargando = true;
+  final formatoFecha = DateFormat('dd/MM/yyyy');
+
+  @override
+  void initState() {
+    super.initState();
+    cargarSesiones();
+  }
+
+  Future<void> cargarSesiones() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('sesiones')
+          .where('userId', isEqualTo: uid)
+          .orderBy('date', descending: true)
+          .get();
+
+      sesiones = snapshot.docs
+          .map((doc) {
+            final data = doc.data();
+            if (data['date'] == null || data['exercises'] == null) return null;
+            return data;
+          })
+          .whereType<Map<String, dynamic>>()
+          .toList();
+    } catch (e) {
+      // manejo de error opcional
+    } finally {
+      setState(() {
+        cargando = false;
+      });
+    }
+  }
+
+  int getWeekNumber(DateTime date) {
+    final firstDayOfYear = DateTime(date.year, 1, 1);
+    final diff = date.difference(firstDayOfYear);
+    return ((diff.inDays + firstDayOfYear.weekday) / 7).floor();
   }
 
   @override
   Widget build(BuildContext context) {
-    final entrenamientos = obtenerEntrenamientosSimulados();
-    final formatoFecha = DateFormat('dd/MM/yyyy');
+    return Scaffold(
+      appBar: AppBar(title: const Text('Historial de Entrenamientos')),
+      body: cargando
+          ? const Center(child: CircularProgressIndicator())
+          : sesiones.isEmpty
+              ? const Center(child: Text('Aún no hay sesiones registradas.'))
+              : ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    Text(
+                      'Resumen semanal',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    _construirResumenCompleto(),
+                    const Divider(height: 32),
+                    Text(
+                      'Progreso por ejercicio (última semana)',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 12),
+                    _construirGrafico(),
+                    const Divider(height: 32),
+                    Text(
+                      'Sesiones de entrenamiento',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 8),
+                    ...sesiones.map((sesion) {
+                      try {
+                        final fecha = (sesion['date'] as Timestamp).toDate();
+                        final ejercicios =
+                            sesion['exercises'] as List<dynamic>? ?? [];
 
-    // Filtrar sesiones dentro de la última semana
+                        final estado = ejercicios.every((e) =>
+                                e is Map &&
+                                e['completed'] != null &&
+                                e['completed'] == true)
+                            ? 'completo'
+                            : 'incompleto';
+
+                        return ExpansionTile(
+                          title: Text('Fecha: ${formatoFecha.format(fecha)}'),
+                          subtitle: Text(
+                              'Ejercicios: ${ejercicios.length} - Estado: $estado'),
+                          leading: Icon(
+                            estado == 'completo'
+                                ? Icons.check_circle
+                                : Icons.error,
+                            color: estado == 'completo'
+                                ? Colors.green
+                                : Colors.red,
+                          ),
+                          children: [
+                            const Divider(),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 16.0, vertical: 4),
+                              child: Text(
+                                'Ejercicios realizados:',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            ...ejercicios.map((e) {
+                              final nombre = e['nombre'] ?? 'Sin nombre';
+                              final repsPlanificadas =
+                                  e['repsPlanificadas'] ?? '-';
+                              final repsRealizadas = e['repsRealizadas'] ?? '-';
+                              final completed = e['completed'] == true;
+
+                              return ListTile(
+                                title: Text(nombre),
+                                subtitle: Text(
+                                    'Reps planificadas: $repsPlanificadas - Reps realizadas: $repsRealizadas'),
+                                trailing: Icon(
+                                  completed ? Icons.check : Icons.close,
+                                  color: completed ? Colors.green : Colors.red,
+                                ),
+                              );
+                            }),
+                            const SizedBox(height: 8),
+                          ],
+                        );
+                      } catch (_) {
+                        return const SizedBox();
+                      }
+                    }).toList(),
+                  ],
+                ),
+    );
+  }
+
+  Widget _construirResumenCompleto() {
     final ahora = DateTime.now();
     final unaSemanaAtras = ahora.subtract(const Duration(days: 7));
-    final entrenamientosDeLaSemana = entrenamientos.where((e) {
-      return e.fecha.isAfter(unaSemanaAtras) && e.fecha.isBefore(ahora);
+
+    final sesionesSemana = sesiones.where((s) {
+      final fecha = (s['date'] as Timestamp).toDate();
+      return fecha.isAfter(unaSemanaAtras) && fecha.isBefore(ahora);
     }).toList();
 
-    // Calcular días entrenados (únicas fechas)
-    final diasEntrenados = entrenamientosDeLaSemana
-        .map((e) => formatoFecha.format(e.fecha))
+    final diasEntrenados = sesionesSemana
+        .map((s) => formatoFecha.format((s['date'] as Timestamp).toDate()))
         .toSet()
         .length;
 
-    // Calcular porcentaje de cumplimiento
-    final completas =
-        entrenamientosDeLaSemana.where((e) => e.estado == 'completo').length;
-    final total = entrenamientosDeLaSemana.length;
-    final porcentajeCumplido =
-        total > 0 ? (completas / total * 100).round() : 0;
+    final completas = sesionesSemana.where((s) {
+      final ejercicios = s['exercises'] as List<dynamic>? ?? [];
+      return ejercicios.every((e) => e['completed'] == true);
+    }).length;
 
-    // Calcular progreso general
-    final totalSesiones = entrenamientos.length;
-    final totalCompletas =
-        entrenamientos.where((e) => e.estado == 'completo').length;
-
-// Agrupar por semana (lunes a domingo)
-    Map<int, int> sesionesPorSemana = {};
-    for (var ent in entrenamientos) {
-      // Usamos la semana del año como clave
-      int week;
-      try {
-        week = int.parse(DateFormat('w').format(ent.fecha));
-      } catch (e) {
-        week = 0; // Valor neutro si falla la conversión
-      }
-      sesionesPorSemana[week] = (sesionesPorSemana[week] ?? 0) + 1;
-    }
-    final mejorSemana = sesionesPorSemana.values.isNotEmpty
-        ? sesionesPorSemana.values.reduce((a, b) => a > b ? a : b)
+    final porcentaje = sesionesSemana.isNotEmpty
+        ? (completas / sesionesSemana.length * 100).round()
         : 0;
 
-    // Calcular racha de días consecutivos entrenando
-    final fechasOrdenadas = entrenamientos
-        .map((e) => DateUtils.dateOnly(e.fecha))
+    final totalSesiones = sesiones.length;
+
+    final fechasOrdenadas = sesiones
+        .map((s) => DateUtils.dateOnly((s['date'] as Timestamp).toDate()))
         .toSet()
         .toList()
       ..sort();
 
     int rachaMaxima = 0;
     int rachaActual = 1;
-
     for (int i = 1; i < fechasOrdenadas.length; i++) {
       final anterior = fechasOrdenadas[i - 1];
       final actual = fechasOrdenadas[i];
-
       if (actual.difference(anterior).inDays == 1) {
         rachaActual += 1;
-        rachaMaxima = rachaActual > rachaMaxima ? rachaActual : rachaMaxima;
+        rachaMaxima = max(rachaMaxima, rachaActual);
       } else {
         rachaActual = 1;
       }
     }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Historial de Entrenamientos')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // Sección de resumen semanal
-          Text(
-            'Resumen semanal',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          Text('Días entrenados: $diasEntrenados'),
-          Text('Porcentaje cumplido: $porcentajeCumplido%'),
+    Map<int, int> sesionesPorSemana = {};
+    for (var s in sesiones) {
+      final fecha = (s['date'] as Timestamp).toDate();
+      int week = getWeekNumber(fecha);
+      sesionesPorSemana[week] = (sesionesPorSemana[week] ?? 0) + 1;
+    }
 
-          // Título del gráfico
-          const SizedBox(height: 16),
-          Text(
-            'Progreso por ejercicio (última semana)',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+    final mejorSemana = sesionesPorSemana.values.isNotEmpty
+        ? sesionesPorSemana.values.reduce((a, b) => a > b ? a : b)
+        : 0;
 
-          const Divider(height: 32),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Días entrenados: $diasEntrenados'),
+        Text('Porcentaje cumplido: $porcentaje%'),
+        Text('Total de sesiones: $totalSesiones'),
+        Text('Racha más larga: $rachaMaxima días'),
+        Text('Mejor semana: $mejorSemana sesiones'),
+      ],
+    );
+  }
 
-          // Gráfico de barras
-          SizedBox(
-            height: 220,
-            child: BarChart(
-              BarChartData(
-                alignment: BarChartAlignment.spaceAround,
-                barTouchData: BarTouchData(enabled: false),
-                titlesData: FlTitlesData(
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (value, meta) {
-                        final labels = [
-                          'Sent.',
-                          'Press',
-                          'Remo',
-                          'Bici',
-                          'Peso',
-                          'Dom.',
-                          'Abd.',
-                          'Soga'
-                        ];
-                        return Text(labels[value.toInt()],
-                            style: const TextStyle(fontSize: 10));
-                      },
-                      reservedSize: 22,
-                    ),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 28,
-                      getTitlesWidget: (value, meta) {
-                        // Mostrar solo valores enteros
-                        if (value % 1 == 0) {
-                          return Text(value.toInt().toString(),
-                              style: const TextStyle(fontSize: 10));
-                        }
-                        return const SizedBox
-                            .shrink(); // Oculta valores no enteros
-                      },
-                    ),
-                  ),
-                  rightTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  topTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                ),
-                borderData: FlBorderData(show: false),
-                barGroups: [
-                  BarChartGroupData(
-                      x: 0, barRods: [BarChartRodData(toY: 36, width: 12)]),
-                  BarChartGroupData(
-                      x: 1, barRods: [BarChartRodData(toY: 30, width: 12)]),
-                  BarChartGroupData(
-                      x: 2, barRods: [BarChartRodData(toY: 10, width: 12)]),
-                  BarChartGroupData(
-                      x: 3, barRods: [BarChartRodData(toY: 0, width: 12)]),
-                  BarChartGroupData(
-                      x: 4, barRods: [BarChartRodData(toY: 8, width: 12)]),
-                  BarChartGroupData(
-                      x: 5, barRods: [BarChartRodData(toY: 6, width: 12)]),
-                  BarChartGroupData(
-                      x: 6, barRods: [BarChartRodData(toY: 20, width: 12)]),
-                  BarChartGroupData(
-                      x: 7, barRods: [BarChartRodData(toY: 0, width: 12)]),
-                ],
+  Widget _construirGrafico() {
+    Map<String, int> repsPorEjercicio = {};
+
+    final ahora = DateTime.now();
+    final unaSemanaAtras = ahora.subtract(const Duration(days: 7));
+
+    final sesionesSemana = sesiones.where((s) {
+      final fecha = (s['date'] as Timestamp).toDate();
+      return fecha.isAfter(unaSemanaAtras) && fecha.isBefore(ahora);
+    });
+
+    for (var sesion in sesionesSemana) {
+      final ejercicios = sesion['exercises'] as List<dynamic>? ?? [];
+      for (var e in ejercicios) {
+        final nombre = e['nombre'] ?? 'Otro';
+        final rawReps = e['repsRealizadas'];
+        final reps = int.tryParse(rawReps.toString()) ?? 0;
+        if (reps > 0) {
+          repsPorEjercicio[nombre] = (repsPorEjercicio[nombre] ?? 0) + reps;
+        }
+      }
+    }
+
+    final etiquetas = repsPorEjercicio.keys.toList();
+    final datos = repsPorEjercicio.values.toList();
+
+    return SizedBox(
+      height: 240,
+      child: BarChart(
+        BarChartData(
+          alignment: BarChartAlignment.spaceAround,
+          barTouchData: BarTouchData(enabled: false),
+          titlesData: FlTitlesData(
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (value, meta) {
+                  final index = value.toInt();
+                  if (index < etiquetas.length) {
+                    return Transform.rotate(
+                      angle: -0.8,
+                      child: Text(
+                        etiquetas[index],
+                        style: const TextStyle(fontSize: 8),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+                reservedSize: 50,
               ),
             ),
-          ),
-
-          const Divider(height: 32),
-          Text(
-            'Sesiones de entrenamiento',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          // Lista de sesiones expandibles
-          ...entrenamientos.map((ent) {
-            return ExpansionTile(
-              title: Text('Fecha: ${formatoFecha.format(ent.fecha)}'),
-              subtitle:
-                  Text('Duración: ${ent.duracion} min - Estado: ${ent.estado}'),
-              leading: Icon(
-                ent.estado == 'completo' ? Icons.check_circle : Icons.error,
-                color: ent.estado == 'completo' ? Colors.green : Colors.red,
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 28,
+                getTitlesWidget: (value, meta) {
+                  if (value % 1 == 0) {
+                    return Text(value.toInt().toString(),
+                        style: const TextStyle(fontSize: 10));
+                  }
+                  return const SizedBox.shrink();
+                },
               ),
-              children: [
-                const Divider(),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 4),
-                  child: Text(
-                    'Ejercicios realizados:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                ...ent.ejercicios.map((ej) => ListTile(
-                      title: Text(ej['nombre']),
-                      subtitle: Text('Repeticiones: ${ej['reps']}'),
-                      trailing: Icon(
-                        ej['hecho'] ? Icons.check : Icons.close,
-                        color: ej['hecho'] ? Colors.green : Colors.red,
-                      ),
-                    )),
-                const SizedBox(height: 8),
-              ],
+            ),
+            rightTitles: AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            topTitles: AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+          ),
+          borderData: FlBorderData(show: false),
+          barGroups: List.generate(etiquetas.length, (i) {
+            return BarChartGroupData(
+              x: i,
+              barRods: [BarChartRodData(toY: datos[i].toDouble(), width: 12)],
             );
           }),
-          const SizedBox(height: 24),
-          Text(
-            'Progreso general',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          Text('Total de sesiones: $totalSesiones'),
-          Text('Sesiones completadas: $totalCompletas'),
-          Text('Mejor semana: $mejorSemana sesiones'),
-          Text('Racha más larga de días seguidos entrenando: $rachaMaxima'),
-        ],
+        ),
       ),
     );
   }
