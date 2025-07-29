@@ -37,6 +37,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
     'Tonificar',
     'Mejorar resistencia',
   ];
+
   String? nivelSeleccionado;
   String? objetivoSeleccionado;
 
@@ -68,7 +69,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 final userData = snapshot.data?.data() as Map<String, dynamic>?;
                 final bool incompleto = userData?['perfilCompleto'] == false;
 
-                // 📦 Obtener datos del usuario
+                //  Obtener datos del usuario
 
                 final nombre = userData?['nombre'] ?? '';
                 final apellido = userData?['apellido'] ?? '';
@@ -76,21 +77,25 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 final edad = userData?['edad']?.toString() ?? '';
                 final peso = userData?['peso']?.toString() ?? '';
                 final altura = userData?['altura']?.toString() ?? '';
-                final disponibilidad =
-                    userData?['disponibilidad']?.toString() ?? '';
+                final disponibilidadSemanal =
+                    userData?['disponibilidadSemanal']?.toString() ?? '';
                 if (!modoEdicion && objetivoSeleccionado == null) {
                   objetivoSeleccionado = userData?['objetivo'] ?? '';
+                }
+                // Validar que el valor realmente esté en la lista
+                if (!objetivos.contains(objetivoSeleccionado)) {
+                  objetivoSeleccionado = null;
                 }
                 final nivel = userData?['nivelExperiencia'] ?? '';
                 final imagenUrl = userData?['imagen_url'];
 
-                // 🧠 Llenar campos si no se está editando
+                //  Llenar campos si no se está editando
                 if (!modoEdicion) {
                   nombreController.text = nombre;
                   apellidoController.text = apellido;
                   pesoController.text = peso;
                   alturaController.text = altura;
-                  disponibilidadController.text = disponibilidad;
+                  disponibilidadController.text = disponibilidadSemanal;
                   nivelSeleccionado = nivel;
                 }
 
@@ -154,13 +159,13 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                 value: '$nombre $apellido',
                               ),
 
-                        // ✉️ Email (no editable)
+                        //  Email (no editable)
                         ProfileField(label: 'Email', value: email),
 
-                        // 🎂 Edad (no editable)
+                        //  Edad (no editable)
                         ProfileField(label: 'Edad', value: edad),
 
-                        // ⚖️ Peso
+                        //  Peso
                         modoEdicion
                             ? CustomTextField(
                                 controller: pesoController,
@@ -177,7 +182,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                             : ProfileField(
                                 label: 'Peso (kg)', value: '$peso kg'),
 
-                        // 📏 Altura
+                        //  Altura
                         modoEdicion
                             ? CustomTextField(
                                 controller: alturaController,
@@ -194,7 +199,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                             : ProfileField(
                                 label: 'Altura (cm)', value: '$altura cm'),
 
-                        // ⏱️ Disponibilidad
+                        // ⏱ Disponibilidad
                         modoEdicion
                             ? CustomTextField(
                                 controller: disponibilidadController,
@@ -210,10 +215,10 @@ class _PerfilScreenState extends State<PerfilScreen> {
                               )
                             : ProfileField(
                                 label: 'Disponibilidad semanal',
-                                value: '$disponibilidad dias por semana',
+                                value: '$disponibilidadSemanal dias por semana',
                               ),
 
-                        // 📊 Nivel de experiencia (Dropdown)
+                        //  Nivel de experiencia (Dropdown)
                         modoEdicion
                             ? DropdownButtonFormField<String>(
                                 decoration: const InputDecoration(
@@ -242,7 +247,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
                         const SizedBox(height: 12),
 
-                        // 🥅 Objetivo
+                        //  Objetivo
                         modoEdicion
                             ? DropdownButtonFormField<String>(
                                 decoration: const InputDecoration(
@@ -271,7 +276,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
                         const SizedBox(height: 12),
 
-                        // 🔘 Botones
+                        //  Botones
                         modoEdicion
                             ? Row(
                                 mainAxisAlignment:
@@ -293,7 +298,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                               double.parse(pesoController.text),
                                           'altura': double.parse(
                                               alturaController.text),
-                                          'disponibilidad': int.parse(
+                                          'disponibilidadSemanal': int.parse(
                                               disponibilidadController.text),
                                           'objetivo':
                                               objetivoSeleccionado ?? '',
@@ -378,7 +383,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
   }
 }
 
-/// 💬 Widget reutilizable para mostrar campos no editables
+///  Widget reutilizable para mostrar campos no editables
 class ProfileField extends StatelessWidget {
   final String label;
   final String value;
@@ -412,7 +417,7 @@ class ProfileField extends StatelessWidget {
   }
 }
 
-/// ✏️ Widget reutilizable para campos editables
+/// Widget reutilizable para campos editables
 class CustomTextField extends StatelessWidget {
   final TextEditingController controller;
   final String label;

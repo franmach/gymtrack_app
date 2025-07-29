@@ -105,7 +105,7 @@ Respondé SOLO con una lista en formato JSON, sin ningún formato markdown, sin 
     throw Exception('Respuesta vacía de Gemini');
   }
 
-  // 🔧 Limpiar posibles backticks y markdown
+  // Limpiar posibles backticks y markdown
   output = output.replaceAll('```json', '').replaceAll('```', '').trim();
 
   try {
@@ -116,7 +116,7 @@ Respondé SOLO con una lista en formato JSON, sin ningún formato markdown, sin 
       return [];
     }
   } catch (e) {
-    print('❌ Error al parsear JSON de lesiones: $e\nContenido:\n$output');
+    print('Error al parsear JSON de lesiones: $e\nContenido:\n$output');
     return [];
   }
 }

@@ -26,13 +26,14 @@ class DashboardScreen extends StatelessWidget {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const CircularProgressIndicator();
             }
+            /*
             if (!snapshot.hasData || !snapshot.data!.exists) {
               return const Text(
                 'Aún no tienes una rutina generada.',
                 textAlign: TextAlign.center,
               );
             }
-
+*/
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
