@@ -6,6 +6,7 @@ import 'package:gymtrack_app/main.dart';
 import 'package:gymtrack_app/services/firestore_routine_service.dart';
 import 'package:gymtrack_app/screens/session/day_selection_screen.dart';
 import 'package:gymtrack_app/screens/session/timer_screen.dart';
+import 'package:gymtrack_app/screens/admin/gimnasio_screen.dart';
 
 /// DashboardScreen: Pantalla principal tras iniciar sesión
 typedef DocSnapshot = DocumentSnapshot<Map<String, dynamic>>;
@@ -90,6 +91,17 @@ class DashboardScreen extends StatelessWidget {
                 ElevatedButton(
                   onPressed: () => Navigator.pushNamed(context, '/profile'),
                   child: const Text('Perfil'),
+                ),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.fitness_center),
+                  label: const Text('Gimnasio'),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const GimnasioScreen()),
+                    );
+                  },
                 ),
 
                 const SizedBox(height: 24),
