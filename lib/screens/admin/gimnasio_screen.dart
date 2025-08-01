@@ -13,6 +13,7 @@ class _GimnasioScreenState extends State<GimnasioScreen> {
   Gimnasio? gimnasio;
   bool cargando = true;
   String? diaSeleccionado;
+  final TextEditingController equipamientoController = TextEditingController();
 
   @override
   void initState() {
@@ -132,82 +133,82 @@ class _GimnasioScreenState extends State<GimnasioScreen> {
                             );
                           }).toList(),
                         ),
-                        TextField(
-                          decoration: const InputDecoration(
-                              labelText: 'Agregar equipamiento'),
-                          onSubmitted: (valor) {
-                            if (valor.isEmpty) return;
-                            setState(() {
-                              final nuevaLista =
-                                  List<String>.from(gimnasio!.equipamiento)
-                                    ..add(valor);
-                              gimnasio =
-                                  gimnasio!.copyWith(equipamiento: nuevaLista);
-                            });
-                          },
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: equipamientoController,
+                                decoration: const InputDecoration(
+                                    labelText: 'Agregar equipamiento'),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            ElevatedButton(
+                              onPressed: () {
+                                final texto =
+                                    equipamientoController.text.trim();
+                                if (texto.isEmpty) return;
+                                if (!gimnasio!.equipamiento.contains(texto)) {
+                                  setState(() {
+                                    final nuevaLista = List<String>.from(
+                                        gimnasio!.equipamiento)
+                                      ..add(texto);
+                                    gimnasio = gimnasio!
+                                        .copyWith(equipamiento: nuevaLista);
+                                    equipamientoController.clear();
+                                  });
+                                }
+                              },
+                              child: const Text('Agregar'),
+                            ),
+                          ],
                         ),
+
                         const SizedBox(height: 24),
 
                         // Días abiertos
                         const Text('Días abiertos',
                             style: TextStyle(
                                 fontSize: 16, fontWeight: FontWeight.bold)),
-                        Wrap(
-                          spacing: 8,
-                          children: gimnasio!.dias_abiertos.map((dia) {
-                            final dias =
-                                List<String>.from(gimnasio!.dias_abiertos);
-                            final esUltimo = dias.length == 1;
+                        Column(
+                          children: [
+                            'Lunes',
+                            'Martes',
+                            'Miércoles',
+                            'Jueves',
+                            'Viernes',
+                            'Sábado',
+                            'Domingo',
+                          ].map((dia) {
+                            final estaActivo =
+                                gimnasio!.dias_abiertos.contains(dia);
+                            final esUltimo =
+                                gimnasio!.dias_abiertos.length == 1;
 
-                            return Chip(
-                              label: Text(dia),
-                              deleteIcon:
-                                  esUltimo ? null : const Icon(Icons.close),
-                              onDeleted: esUltimo
-                                  ? null
-                                  : () {
-                                      setState(() {
-                                        diaSeleccionado =
-                                            null; // importante: antes de modificar la lista
-                                        final nuevaLista = List<String>.from(
-                                            gimnasio!.dias_abiertos)
-                                          ..remove(dia);
-                                        gimnasio = gimnasio!.copyWith(
-                                            dias_abiertos: nuevaLista);
-                                      });
-                                    },
+                            return CheckboxListTile(
+                              title: Text(dia),
+                              value: estaActivo,
+                              onChanged: (checked) {
+                                if (!checked! && esUltimo) return;
+
+                                setState(() {
+                                  final nuevaLista = List<String>.from(
+                                      gimnasio!.dias_abiertos);
+                                  if (checked && !nuevaLista.contains(dia)) {
+                                    nuevaLista.add(dia);
+                                  } else if (!checked) {
+                                    nuevaLista.remove(dia);
+                                  }
+                                  gimnasio = gimnasio!
+                                      .copyWith(dias_abiertos: nuevaLista);
+                                });
+                              },
+                              controlAffinity: ListTileControlAffinity.leading,
                             );
                           }).toList(),
                         ),
-                        const SizedBox(height: 8),
 
-// Dropdown para agregar días
-                        _diasDisponibles().isEmpty
-                            ? const Text('Todos los días ya están agregados.')
-                            : DropdownButtonFormField<String>(
-                                value:
-                                    _diasDisponibles().contains(diaSeleccionado)
-                                        ? diaSeleccionado
-                                        : null,
-                                decoration: const InputDecoration(
-                                    labelText: 'Agregar día'),
-                                items: _diasDisponibles()
-                                    .map((dia) => DropdownMenuItem(
-                                        value: dia, child: Text(dia)))
-                                    .toList(),
-                                onChanged: (valor) {
-                                  if (valor == null) return;
-                                  setState(() {
-                                    final nuevaLista = List<String>.from(
-                                        gimnasio!.dias_abiertos)
-                                      ..add(valor);
-                                    gimnasio = gimnasio!
-                                        .copyWith(dias_abiertos: nuevaLista);
-                                    diaSeleccionado = null;
-                                  });
-                                },
-                              ),
-
+                        const SizedBox(height: 24),
                         // Guardar
                         ElevatedButton(
                           onPressed: _guardarCambios,
