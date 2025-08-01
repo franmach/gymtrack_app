@@ -1,3 +1,7 @@
+// 📄 GIMNASIO_SCREEN.DART – Corregido por Ángel y ChatGPT
+// Incluye:
+// - Mejora visual en el gráfico de historial (fl_chart)
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -43,7 +47,6 @@ class _HistorialScreenState extends State<HistorialScreen> {
           .whereType<Map<String, dynamic>>()
           .toList();
     } catch (e) {
-      // manejo de error opcional
     } finally {
       setState(() {
         cargando = false;
@@ -68,31 +71,24 @@ class _HistorialScreenState extends State<HistorialScreen> {
               : ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    Text(
-                      'Resumen semanal',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
+                    Text('Resumen semanal',
+                        style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 8),
                     _construirResumenCompleto(),
                     const Divider(height: 32),
-                    Text(
-                      'Progreso por ejercicio (última semana)',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
+                    Text('Progreso por ejercicio (últimos 30 días)',
+                        style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 12),
                     _construirGrafico(),
                     const Divider(height: 32),
-                    Text(
-                      'Sesiones de entrenamiento',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
+                    Text('Sesiones de entrenamiento',
+                        style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 8),
                     ...sesiones.map((sesion) {
                       try {
                         final fecha = (sesion['date'] as Timestamp).toDate();
                         final ejercicios =
                             sesion['exercises'] as List<dynamic>? ?? [];
-
                         final estado = ejercicios.every((e) =>
                                 e is Map &&
                                 e['completed'] != null &&
@@ -117,10 +113,9 @@ class _HistorialScreenState extends State<HistorialScreen> {
                             const Padding(
                               padding: EdgeInsets.symmetric(
                                   horizontal: 16.0, vertical: 4),
-                              child: Text(
-                                'Ejercicios realizados:',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
+                              child: Text('Ejercicios realizados:',
+                                  style:
+                                      TextStyle(fontWeight: FontWeight.bold)),
                             ),
                             ...ejercicios.map((e) {
                               final nombre = e['nombre'] ?? 'Sin nombre';
@@ -128,15 +123,14 @@ class _HistorialScreenState extends State<HistorialScreen> {
                                   e['repsPlanificadas'] ?? '-';
                               final repsRealizadas = e['repsRealizadas'] ?? '-';
                               final completed = e['completed'] == true;
-
                               return ListTile(
                                 title: Text(nombre),
                                 subtitle: Text(
                                     'Reps planificadas: $repsPlanificadas - Reps realizadas: $repsRealizadas'),
                                 trailing: Icon(
-                                  completed ? Icons.check : Icons.close,
-                                  color: completed ? Colors.green : Colors.red,
-                                ),
+                                    completed ? Icons.check : Icons.close,
+                                    color:
+                                        completed ? Colors.green : Colors.red),
                               );
                             }),
                             const SizedBox(height: 8),
@@ -220,16 +214,15 @@ class _HistorialScreenState extends State<HistorialScreen> {
 
   Widget _construirGrafico() {
     Map<String, int> repsPorEjercicio = {};
-
     final ahora = DateTime.now();
-    final unaSemanaAtras = ahora.subtract(const Duration(days: 7));
+    final desde = ahora.subtract(const Duration(days: 30));
 
-    final sesionesSemana = sesiones.where((s) {
+    final sesionesRango = sesiones.where((s) {
       final fecha = (s['date'] as Timestamp).toDate();
-      return fecha.isAfter(unaSemanaAtras) && fecha.isBefore(ahora);
+      return fecha.isAfter(desde) && fecha.isBefore(ahora);
     });
 
-    for (var sesion in sesionesSemana) {
+    for (var sesion in sesionesRango) {
       final ejercicios = sesion['exercises'] as List<dynamic>? ?? [];
       for (var e in ejercicios) {
         final nombre = e['nombre'] ?? 'Otro';
@@ -241,11 +234,17 @@ class _HistorialScreenState extends State<HistorialScreen> {
       }
     }
 
+    if (repsPorEjercicio.isEmpty) {
+      return const Center(
+        child: Text('No hay repeticiones registradas en los últimos 30 días.'),
+      );
+    }
+
     final etiquetas = repsPorEjercicio.keys.toList();
     final datos = repsPorEjercicio.values.toList();
 
     return SizedBox(
-      height: 240,
+      height: 260,
       child: BarChart(
         BarChartData(
           alignment: BarChartAlignment.spaceAround,
@@ -258,10 +257,10 @@ class _HistorialScreenState extends State<HistorialScreen> {
                   final index = value.toInt();
                   if (index < etiquetas.length) {
                     return Transform.rotate(
-                      angle: -0.8,
+                      angle: -0.5,
                       child: Text(
                         etiquetas[index],
-                        style: const TextStyle(fontSize: 8),
+                        style: const TextStyle(fontSize: 10),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 2,
                       ),
@@ -269,7 +268,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
                   }
                   return const SizedBox.shrink();
                 },
-                reservedSize: 50,
+                reservedSize: 48,
               ),
             ),
             leftTitles: AxisTitles(
@@ -285,18 +284,22 @@ class _HistorialScreenState extends State<HistorialScreen> {
                 },
               ),
             ),
-            rightTitles: AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
-            topTitles: AxisTitles(
-              sideTitles: SideTitles(showTitles: false),
-            ),
+            rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
           ),
           borderData: FlBorderData(show: false),
           barGroups: List.generate(etiquetas.length, (i) {
             return BarChartGroupData(
               x: i,
-              barRods: [BarChartRodData(toY: datos[i].toDouble(), width: 12)],
+              barRods: [
+                BarChartRodData(
+                  toY: datos[i].toDouble(),
+                  width: 14,
+                  color: Colors.tealAccent,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ],
+              showingTooltipIndicators: [0],
             );
           }),
         ),
