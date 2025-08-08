@@ -8,6 +8,7 @@ import 'package:gymtrack_app/screens/session/day_selection_screen.dart';
 import 'package:gymtrack_app/screens/session/timer_screen.dart';
 import 'package:gymtrack_app/screens/admin/gimnasio_screen.dart';
 import 'package:gymtrack_app/screens/progreso/registroProgreso_screen.dart';
+import 'package:gymtrack_app/screens/progreso/visualizarProgreso_screen.dart';
 
 /// DashboardScreen: Pantalla principal tras iniciar sesión
 typedef DocSnapshot = DocumentSnapshot<Map<String, dynamic>>;
@@ -89,7 +90,7 @@ class DashboardScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
-                // Botón para acceder al progreso
+                // Botón para acceder al registro de progreso
                 ElevatedButton.icon(
                   onPressed: () {
                     Navigator.of(context).push(
@@ -99,7 +100,21 @@ class DashboardScreen extends StatelessWidget {
                     );
                   },
                   icon: const Icon(Icons.timeline),
-                  label: const Text('Progreso'),
+                  label: const Text('Registro de progreso'),
+                ),
+                const SizedBox(height: 12),
+
+                // Botón para visualizar al progreso
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const VisualizarProgresoScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.timeline),
+                  label: const Text('Ver progreso'),
                 ),
                 const SizedBox(height: 12),
 

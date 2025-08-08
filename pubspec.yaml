@@ -30,7 +30,7 @@ dependencies:
   flutter_dotenv: ^5.1.0
 
   # Gráficos
-  fl_chart: ^0.64.0
+  fl_chart: ^0.66.2
 
   # IA (Gemini)
   google_generative_ai: ^0.4.7
