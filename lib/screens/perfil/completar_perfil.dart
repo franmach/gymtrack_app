@@ -28,6 +28,7 @@ class _CompletarPerfilScreenState extends State<CompletarPerfilScreen> {
   List<String>? lesionesProcesadas;
   int minPorSesion = 0;
   File? imagenSeleccionada;
+  String gimnasioId = 'gimnasio_point'; // Fijo por ahora
 
   final niveles = [
     'Principiante (0–1 año)',
@@ -114,6 +115,7 @@ class _CompletarPerfilScreenState extends State<CompletarPerfilScreen> {
         'lesiones': lesionesProcesadas,
         'perfilCompleto': true,
         if (urlImagen != null) 'imagen_url': urlImagen,
+        'gimnasioId': gimnasioId,
       });
 
       ScaffoldMessenger.of(context).showSnackBar(

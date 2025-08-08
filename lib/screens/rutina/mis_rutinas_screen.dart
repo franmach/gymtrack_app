@@ -40,6 +40,7 @@ class MisRutinasScreen extends StatelessWidget {
         rol: data['rol'] ?? 'alumno',
         fechaRegistro:
             DateTime.tryParse(data['fechaRegistro'] ?? '') ?? DateTime.now(),
+        gimnasioId: data['gimnasioId'] ?? '',
       );
 
       await RutinaService.generarRutinaDesdePerfil(usuario);

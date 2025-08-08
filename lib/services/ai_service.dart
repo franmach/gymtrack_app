@@ -26,7 +26,7 @@ class AiService {
     required int dias,
     required int minPorSesion,
     required String genero,
-    required String lesiones,
+    required String lesiones, String? gimnasioId,
   }) async {
     final prompt = '''
 Generá una rutina de entrenamiento semanal con los siguientes datos del usuario:

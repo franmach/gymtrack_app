@@ -7,6 +7,7 @@ import 'package:gymtrack_app/services/firestore_routine_service.dart';
 import 'package:gymtrack_app/screens/session/day_selection_screen.dart';
 import 'package:gymtrack_app/screens/session/timer_screen.dart';
 import 'package:gymtrack_app/screens/admin/gimnasio_screen.dart';
+import 'package:gymtrack_app/screens/progreso/registroProgreso_screen.dart';
 
 /// DashboardScreen: Pantalla principal tras iniciar sesión
 typedef DocSnapshot = DocumentSnapshot<Map<String, dynamic>>;
@@ -28,12 +29,12 @@ class DashboardScreen extends StatelessWidget {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const CircularProgressIndicator();
             }
-            if (!snapshot.hasData || !snapshot.data!.exists) {
+            /* if (!snapshot.hasData || !snapshot.data!.exists) {
               return const Text(
                 'Aún no tienes una rutina generada.',
                 textAlign: TextAlign.center,
               );
-            }
+            }*/
 
             return Column(
               mainAxisSize: MainAxisSize.min,
@@ -85,6 +86,20 @@ class DashboardScreen extends StatelessWidget {
                   },
                   icon: const Icon(Icons.timer),
                   label: const Text('Temporizador'),
+                ),
+                const SizedBox(height: 12),
+
+                // Botón para acceder al progreso
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const ProgresoScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.timeline),
+                  label: const Text('Progreso'),
                 ),
                 const SizedBox(height: 12),
 

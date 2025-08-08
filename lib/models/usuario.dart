@@ -55,6 +55,7 @@ class Usuario {
       rol: data['rol'] ?? 'alumno',
       fechaRegistro:
           DateTime.tryParse(data['fechaRegistro'] ?? '') ?? DateTime.now(),
+      gimnasioId: data['gimnasioId'],
     );
   }
 
