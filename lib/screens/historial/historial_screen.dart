@@ -63,7 +63,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Historial de Entrenamientos')),
+      appBar: AppBar(title: const Text('Entrenamientos')),
       body: cargando
           ? const Center(child: CircularProgressIndicator())
           : sesiones.isEmpty

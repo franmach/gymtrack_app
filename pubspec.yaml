@@ -39,6 +39,8 @@ dependencies:
   http: ^1.2.1
   flutter_local_notifications: ^17.1.2
   intl: ^0.18.1
+  google_fonts: ^6.1.0
+
 
 dev_dependencies:
   flutter_test:
