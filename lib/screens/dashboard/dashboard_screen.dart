@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:gymtrack_app/screens/historial/historial_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gymtrack_app/main.dart';
 import 'package:gymtrack_app/services/firestore_routine_service.dart';
 import 'package:gymtrack_app/screens/session/day_selection_screen.dart';
 import 'package:gymtrack_app/screens/session/timer_screen.dart';
+import 'package:gymtrack_app/screens/admin/gimnasio_screen.dart';
 import 'package:gymtrack_app/screens/nutricion/nutrition_plan_screen.dart'; // Nueva pantalla de Plan Alimenticio
 
 /// DashboardScreen: Pantalla principal tras iniciar sesión
@@ -21,7 +23,8 @@ class DashboardScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Dashboard')),
       body: Center(
         child: FutureBuilder<DocSnapshot>(
-          future: FirebaseFirestore.instance.collection('rutinas').doc(uid).get(),
+          future:
+              FirebaseFirestore.instance.collection('rutinas').doc(uid).get(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const CircularProgressIndicator();
@@ -36,6 +39,12 @@ class DashboardScreen extends StatelessWidget {
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                const Text(
+                  'Bienvenido al Dashboard',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 24),
+
                 // Botón de iniciar entrenamiento
                 ElevatedButton(
                   onPressed: () {
@@ -50,8 +59,21 @@ class DashboardScreen extends StatelessWidget {
                   },
                   child: const Text('Iniciar entrenamiento'),
                 ),
+                const SizedBox(height: 12),
 
-                const SizedBox(height: 24),
+                // Botón para acceder al historial de entrenamientos
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const HistorialScreen(),
+                      ),
+                    );
+                  },
+                  child: const Text('Historial'),
+                ),
+                const SizedBox(height: 12),
 
                 // Botón para acceder al temporizador
                 ElevatedButton.icon(
@@ -80,26 +102,29 @@ class DashboardScreen extends StatelessWidget {
                   icon: const Icon(Icons.restaurant_menu),
                   label: const Text('Plan Alimenticio'),
                 ),
+                const SizedBox(height: 12),
 
-                const SizedBox(height: 32),
-
-                const Text(
-                  'Bienvenido al Dashboard',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: () => Navigator.pushNamed(context, '/profile'),
                   child: const Text('Perfil'),
                 ),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: () => Navigator.pushNamed(context, '/settings'),
-                  child: const Text('Configuraciones'),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.fitness_center),
+                  label: const Text('Gimnasio'),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const GimnasioScreen()),
+                    );
+                  },
                 ),
+
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                  ),
                   onPressed: () async {
                     await FirebaseAuth.instance.signOut();
                     Navigator.pushAndRemoveUntil(

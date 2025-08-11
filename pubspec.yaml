@@ -14,6 +14,7 @@ dependencies:
   firebase_auth: ^4.19.1
   cloud_firestore: ^4.17.5
   firebase_storage: ^11.7.3
+  image_picker: ^1.0.4
 
   # Dependencias para oersistencia lcal 
   shared_preferences: ^2.1.0 # Guarda pares clave–valor simples
@@ -39,11 +40,13 @@ dependencies:
   # Extras
   http: ^1.2.1
   flutter_local_notifications: ^17.1.2
+  intl: ^0.18.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+
 
 flutter:
   uses-material-design: true

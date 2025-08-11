@@ -8,6 +8,8 @@ import 'package:gymtrack_app/services/nutrition_ai_service.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/perfil/perfil_screen.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
