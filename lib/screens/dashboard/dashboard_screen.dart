@@ -5,6 +5,7 @@ import 'package:gymtrack_app/main.dart';
 import 'package:gymtrack_app/services/firestore_routine_service.dart';
 import 'package:gymtrack_app/screens/session/day_selection_screen.dart';
 import 'package:gymtrack_app/screens/session/timer_screen.dart';
+import 'package:gymtrack_app/screens/nutricion/nutrition_plan_screen.dart'; // Nueva pantalla de Plan Alimenticio
 
 /// DashboardScreen: Pantalla principal tras iniciar sesión
 typedef DocSnapshot = DocumentSnapshot<Map<String, dynamic>>;
@@ -63,6 +64,21 @@ class DashboardScreen extends StatelessWidget {
                   },
                   icon: const Icon(Icons.timer),
                   label: const Text('Temporizador'),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Botón para acceder al Plan Alimenticio
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const NutritionPlanScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.restaurant_menu),
+                  label: const Text('Plan Alimenticio'),
                 ),
 
                 const SizedBox(height: 32),

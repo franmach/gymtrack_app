@@ -76,4 +76,19 @@ Formato esperado:
       throw FormatException('La respuesta no es un JSON válido: $e\n\nContenido:\n$output');
     }
   }
+
+  /// Devuelve un List<dynamic> parseado de cualquier prompt que responda con JSON
+Future<List<dynamic>> generarJsonDesdePrompt(String prompt) async {
+  final response = await _model.generateContent([Content.text(prompt)]);
+  final output = response.text;
+  if (output == null) {
+    throw Exception('Respuesta vacía de Gemini');
+  }
+  try {
+    // parseamos asumiendo que viene un JSON array en texto puro
+    return jsonDecode(output) as List<dynamic>;
+  } catch (e) {
+    throw FormatException('La respuesta no es un JSON válido: $e\n\n$output');
+  }
+}
 }

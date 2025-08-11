@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:provider/provider.dart';
+import 'package:gymtrack_app/services/ai_service.dart';
+import 'package:gymtrack_app/services/nutrition_ai_service.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/perfil/perfil_screen.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,7 +16,22 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const GymTrackApp());
+
+  runApp(
+    MultiProvider(
+      providers: [
+        // Servicio genérico de AI usando Gemini 1.5 Flash
+        Provider<AiService>(
+          create: (_) => AiService(),
+        ),
+        // Servicio de nutrición que reusa AiService
+        Provider<NutritionAIService>(
+          create: (ctx) => NutritionAIService(),
+        ),
+      ],
+      child: const GymTrackApp(),
+    ),
+  );
 }
 
 class GymTrackApp extends StatelessWidget {
@@ -30,8 +47,8 @@ class GymTrackApp extends StatelessWidget {
       ),
       home: const HomeScreen(),
       routes: {
-        '/profile': (context) => PerfilScreen(),
-        //   '/settings': (context) => Placeholder(),
+        '/profile': (context) => const PerfilScreen(),
+        // Agrega aquí más rutas si las necesitas
       },
     );
   }
@@ -46,10 +63,8 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Bienvenido a GymTrack')),
       body: Center(
         child: Column(
-          mainAxisSize: MainAxisSize
-              .min, // Para que la columna ocupe solo el espacio de los botones
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Botón de registro
             ElevatedButton(
               child: const Text('Registrarse'),
               onPressed: () {
@@ -60,10 +75,7 @@ class HomeScreen extends StatelessWidget {
                 );
               },
             ),
-
-            const SizedBox(height: 16), // Separador entre botones
-
-            // Botón de login
+            const SizedBox(height: 16),
             ElevatedButton(
               child: const Text('Iniciar Sesión'),
               onPressed: () {
