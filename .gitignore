@@ -16,3 +16,4 @@ ios/Flutter/Flutter.podspec
 
 # Environment
 .env
+.env.*
