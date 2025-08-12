@@ -256,10 +256,14 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
                                   fontWeight: FontWeight.w600),
                             ),
                             ...entry.value.map((item) => ListTile(
-                                  title: Text(item.comida.nombre),
-                                  subtitle: Text(
-                                      '${item.comida.macros.proteinGrams}g proteína • ${item.portion}g porción'),
-                                )),
+                                title: Text(item.comida.nombre),
+                                subtitle: Text(
+                                  '${item.comida.macros.proteinGrams}g proteína • '
+                                  '${item.comida.macros.calories.toStringAsFixed(0)} kcal • '
+                                  '${item.portion} porción'
+                                  '${item.tipo.isNotEmpty ? ' • ${item.tipo}' : ''}'
+                                ),
+                              )),
                           ],
                         );
                       }).toList(),
