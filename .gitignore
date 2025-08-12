@@ -15,4 +15,4 @@ ios/Flutter/Flutter.podspec
 .DS_Store
 
 # Environment
-#.env
+.env
