@@ -48,6 +48,7 @@ class FirestoreRoutineService implements RoutineService {
                 .toString(),
         series: (m['series'] ?? 0) as int,
         repeticiones: (m['repeticiones'] ?? m['reps'] ?? 0) as int,
+        peso: m['peso'] != null ? (m['peso'] as num).toDouble() : null,
         descansoSegundos: (m['descanso_segundos'] ?? 0) as int,
       );
     }).toList();

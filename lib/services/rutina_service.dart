@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gymtrack_app/models/usuario.dart'; // Ajustar si el path es diferente
 import 'package:gymtrack_app/services/ai_service.dart';
+import 'package:gymtrack_app/models/ejercicioAsignado.dart';
 
 class RutinaService {
   static Future<void> generarRutinaDesdePerfil(Usuario usuario) async {
@@ -41,7 +42,16 @@ class RutinaService {
         'dias_por_semana': usuario.disponibilidadSemanal,
         'min_por_sesion': usuario.minPorSesion,
         'es_actual': true,
-        'rutina': rutinaJson['rutina'],
+        'rutina': (rutinaJson['rutina'] as List<dynamic>).map((dia) {
+          return {
+            'dia': dia['dia'],
+            'ejercicios': (dia['ejercicios'] as List<dynamic>).map((ej) {
+              final ejercicio =
+                  EjercicioAsignado.fromMap(Map<String, dynamic>.from(ej));
+              return ejercicio.toMap(); // Aquí incluimos peso si lo tiene
+            }).toList(),
+          };
+        }).toList(),
       });
 
       print('Rutina generada y guardada correctamente');
@@ -93,10 +103,19 @@ class RutinaService {
       'es_actual': true,
       'generada_automaticamente': true,
       'objetivo': objetivo,
-      'nivel': rutinaJson['nivel'] ?? nivelExperiencia, // << CORREGIDO
+      'nivel': rutinaJson['nivel'] ?? nivelExperiencia,
       'dias_por_semana': diasLista.length,
       'min_por_sesion': rutinaJson['min_por_sesion'] ?? 45,
-      'rutina': diasLista,
+      'rutina': diasLista.map((dia) {
+        return {
+          'dia': dia['dia'],
+          'ejercicios': (dia['ejercicios'] as List<dynamic>).map((ej) {
+            final ejercicio =
+                EjercicioAsignado.fromMap(Map<String, dynamic>.from(ej));
+            return ejercicio.toMap(); // Incluye peso si lo tiene
+          }).toList(),
+        };
+      }).toList(),
     });
 
     print('✅ Rutina ajustada guardada correctamente');

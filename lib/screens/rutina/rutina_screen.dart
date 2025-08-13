@@ -19,6 +19,8 @@ class _RutinaScreenState extends State<RutinaScreen> {
     _cargarRutina();
   }
 
+  TextEditingController pesoController = TextEditingController();
+
   Future<void> _cargarRutina() async {
     final doc = await FirebaseFirestore.instance
         .collection('rutinas')
@@ -56,10 +58,74 @@ class _RutinaScreenState extends State<RutinaScreen> {
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             children: ejercicios.map<Widget>((ej) {
-              return ListTile(
-                title: Text(ej['nombre']),
-                subtitle: Text(
-                    '${ej['grupo_muscular'] ?? ej['grupoMuscular'] ?? ''} — Series:  ${ej['series']} — Repeticiones: ${ej['repeticiones']}'),
+              final peso = ej['peso'];
+              return Card(
+                color: Colors.black,
+                margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        ej['nombre'],
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(Icons.fitness_center,
+                              color: Theme.of(context).primaryColor, size: 22),
+                          const SizedBox(width: 6),
+                          Text(
+                            ej['grupo_muscular'] ?? ej['grupoMuscular'] ?? '',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(color: Colors.white),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(Icons.format_list_numbered,
+                              color: Theme.of(context).primaryColor, size: 22),
+                          const SizedBox(width: 6),
+                          Text('Series: ${ej['series']}',
+                              style: TextStyle(color: Colors.white)),
+                          const SizedBox(width: 16),
+                          Icon(Icons.repeat,
+                              color: Theme.of(context).primaryColor, size: 22),
+                          const SizedBox(width: 6),
+                          Text('Reps: ${ej['repeticiones']}',
+                              style: TextStyle(color: Colors.white)),
+                        ],
+                      ),
+                      if (peso != null && (peso as num) > 0) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Icon(Icons.fitness_center,
+                                color: Theme.of(context).primaryColor,
+                                size: 22),
+                            const SizedBox(width: 6),
+                            Text(
+                                'Peso recomendado: ${peso.toStringAsFixed(2)} kg',
+                                style: TextStyle(color: Colors.white)),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               );
             }).toList(),
           );

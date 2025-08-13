@@ -71,7 +71,7 @@ class AjusteRutinaService {
     print('→ Se encontraron ${sesiones.length} sesiones');
 
     print('→ Generando resumen mensual...');
-    final resumenMensual = generarResumenMensual(sesiones);
+    final resumenMensual = AnalisisSesiones.generarResumenMensual(sesiones);
     print('→ Resumen generado: ${jsonEncode(resumenMensual)}');
 
     print('→ Enviando datos a Gemini...');

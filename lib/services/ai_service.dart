@@ -33,7 +33,8 @@ class AiService {
     required String lesiones,
   }) async {
     final prompt = '''
-Generá una rutina de entrenamiento semanal con los siguientes datos del usuario:
+Sos un entrenador personal experto. Tu tarea es generar una rutina de entrenamiento mensual para un usuario, teniendo en cuenta sus datos y objetivos.
+Generá una rutina de entrenamiento mensual con los siguientes datos del usuario:
 
 Edad: $edad años  
 Peso: $peso kg  
@@ -64,6 +65,8 @@ Ejemplo de respuesta esperada:
           "series": 4,
           "repeticiones": 12,
           "descanso_segundos": 60
+          "peso": 20.5 // Este campo es opcional dependiendo el ejercicio y el usuario
+
         }
       ]
     }
@@ -137,14 +140,12 @@ NO generes una rutina nueva desde cero.
 Mantené la estructura general de la rutina actual:
 - Misma cantidad de días por semana
 - Ejercicios similares o los mismos (si dieron resultado)
-- Solo cambiá repeticiones o series cuando sea necesario
+- Solo cambiá repeticiones, series o peso cuando sea necesario
 
 Tené en cuenta:
-- Si un ejercicio fue completado con facilidad, podés aumentar ligeramente las repeticiones o series.
-- Si un ejercicio fue marcado como incompleto o difícil, podés reducir el volumen o reemplazarlo.
+- Si un ejercicio fue completado con facilidad, podés aumentar ligeramente las repeticiones, series o peso.
+- Si un ejercicio fue marcado como incompleto o difícil, podés reducir el volumen o el peso, o reemplazarlo.
 - Evitá mantener ejercicios que el usuario falló repetidamente.
-
-
 
 La respuesta debe ser SOLO un JSON con esta estructura:
 
@@ -155,7 +156,8 @@ La respuesta debe ser SOLO un JSON con esta estructura:
         "nombre": "Press banca",
         "grupoMuscular": "Pecho",
         "series": 4,
-        "repeticiones": 10
+        "repeticiones": 10,
+        "peso": 22.5
       },
       ...
     ],
@@ -184,5 +186,4 @@ No expliques tu decisión. No uses texto fuera del JSON. Solo devolvé el JSON a
           'La respuesta de Gemini no es JSON válido: $e\nContenido:\n$limpio');
     }
   }
-   
 }
