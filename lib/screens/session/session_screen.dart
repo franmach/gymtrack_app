@@ -1,3 +1,4 @@
+// ... imports existentes ...
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -31,6 +32,7 @@ class _SesionScreenState extends State<SesionScreen> {
   late List<bool> _incomplete;
   late SharedPreferences _prefs;
   final _localKey = 'session_partial';
+  final _comentarioGeneralCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -95,7 +97,10 @@ class _SesionScreenState extends State<SesionScreen> {
 
   @override
   void dispose() {
-    for (var c in _doneCtrls) c.dispose();
+    for (var c in _doneCtrls) {
+      c.dispose();
+    }
+    _comentarioGeneralCtrl.dispose();
     super.dispose();
   }
 
@@ -110,16 +115,17 @@ class _SesionScreenState extends State<SesionScreen> {
     }
 
     final doc = {
-      'userId': widget.userId,
+      'uid': widget.userId,
       'day': widget.day,
       'date': Timestamp.now(),
+      'comentario_general': _comentarioGeneralCtrl.text.trim(),
       'exercises': List.generate(_exercises.length, (i) {
         final e = _exercises[i];
         return {
           'nombre': e.nombre,
           'grupoMuscular': e.grupoMuscular,
           'series': e.series,
-          'repsPlanificadas': e.repeticiones,
+          'repsPlanificadas':  e.series * e.repeticiones,
           'repsRealizadas': int.tryParse(_doneCtrls[i].text) ?? 0,
           'completed': _completed[i],
           'incomplete': _incomplete[i],
@@ -141,13 +147,15 @@ class _SesionScreenState extends State<SesionScreen> {
         const SnackBar(content: Text('Sesión guardada exitosamente')),
       );
     }
+
     await _prefs.remove(_localKey);
     Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
-    final allChecked = _exercises.isNotEmpty && List.generate(_exercises.length, (i) => _completed[i] || _incomplete[i]).every((v) => v);
+    final allChecked = _exercises.isNotEmpty &&
+        List.generate(_exercises.length, (i) => _completed[i] || _incomplete[i]).every((v) => v);
 
     return Scaffold(
       appBar: AppBar(title: Text('Sesión de ${widget.day}')),
@@ -156,98 +164,141 @@ class _SesionScreenState extends State<SesionScreen> {
           : Column(
               children: [
                 Expanded(
-                  child: ListView.builder(
+                  child: ListView(
                     padding: const EdgeInsets.all(16),
-                    itemCount: _exercises.length,
-                    itemBuilder: (_, i) {
-                      final e = _exercises[i];
-                      final locked = _completed[i] || _incomplete[i];
-                      return Card(
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(e.nombre, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 4),
-                              Text(e.grupoMuscular, style: const TextStyle(color: Colors.grey)),
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('Series: ${e.series}'),
-                                      Text('Reps: ${e.repeticiones}'),
-                                    ],
-                                  ),
-                                  const SizedBox(width: 24),
-                                  Expanded(
-                                    child: TextField(
-                                      controller: _doneCtrls[i],
-                                      enabled: !locked,
-                                      keyboardType: TextInputType.number,
-                                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                                      decoration: const InputDecoration(
-                                        labelText: 'Rep. totales realizadas',
-                                        isDense: true,
-                                        contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                                      ),
-                                      onChanged: (_) => _savePartial(),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Column(
-                                    children: [
-                                      const Text('Completado'),
-                                      Checkbox(
-                                        value: _completed[i],
-                                        onChanged: (val) {
-                                          setState(() {
-                                            _completed[i] = val!;
-                                            if (val) _incomplete[i] = false;
-                                          });
-                                          _savePartial();
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Column(
-                                    children: [
-                                      const Text('Incompleto'),
-                                      Checkbox(
-                                        value: _incomplete[i],
-                                        onChanged: (val) {
-                                          setState(() {
-                                            _incomplete[i] = val!;
-                                            if (val) _completed[i] = false;
-                                          });
-                                          _savePartial();
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
+                    children: [
+                      for (int i = 0; i < _exercises.length; i++) _buildExerciseCard(i),
+                      const SizedBox(height: 24),
+                      TextField(
+                        controller: _comentarioGeneralCtrl,
+                        maxLines: 3,
+                        decoration: const InputDecoration(
+                          labelText: 'Comentario general de la sesión (opcional)',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                          contentPadding: EdgeInsets.all(12),
                         ),
-                      );
-                    },
+                      ),
+                    ],
                   ),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: ElevatedButton(
                     onPressed: allChecked ? _finishSession : null,
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                    ),
                     child: const Text('Entrenamiento finalizado'),
                   ),
                 ),
               ],
             ),
+    );
+  }
+
+  Widget _buildExerciseCard(int i) {
+    final e = _exercises[i];
+    final locked = _completed[i] || _incomplete[i];
+
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(e.nombre, style: const TextStyle(color: Colors.grey, fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text(e.grupoMuscular, style: const TextStyle(color: Colors.grey)),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Series: ${e.series}'),
+                    Text('Reps: ${e.repeticiones}'),
+                  ],
+                ),
+                const SizedBox(width: 24),
+                Expanded(
+                  child: TextField(
+                    controller: _doneCtrls[i],
+                    enabled: !locked,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: const InputDecoration(
+                      labelText: 'Rep. totales realizadas',
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                    ),
+                    onChanged: (_) => _savePartial(),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Column(
+  children: [
+    const Text('Completado', style: TextStyle(color: Colors.white)),
+    const SizedBox(height: 4),
+    GestureDetector(
+      onTap: () {
+        setState(() {
+          _completed[i] = !_completed[i];
+          if (_completed[i]) _incomplete[i] = false;
+        });
+        _savePartial();
+      },
+      child: Container(
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.white),
+          color: _completed[i] ? Colors.green : Colors.transparent,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: _completed[i]
+            ? const Icon(Icons.check, size: 20, color: Colors.black)
+            : null,
+      ),
+    ),
+  ],
+),
+const SizedBox(width: 8),
+Column(
+  children: [
+    const Text('Incompleto', style: TextStyle(color: Colors.white)),
+    const SizedBox(height: 4),
+    GestureDetector(
+      onTap: () {
+        setState(() {
+          _incomplete[i] = !_incomplete[i];
+          if (_incomplete[i]) _completed[i] = false;
+        });
+        _savePartial();
+      },
+      child: Container(
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.white),
+          color: _incomplete[i] ? Colors.red : Colors.transparent,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: _incomplete[i]
+            ? const Icon(Icons.close, size: 20, color: Colors.white)
+            : null,
+      ),
+    ),
+  ],
+),
+
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

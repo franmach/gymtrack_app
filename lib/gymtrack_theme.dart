@@ -15,7 +15,7 @@ final ThemeData gymTrackTheme = ThemeData(
     onPrimary: negro,
     secondary: grisClaro,
     onSecondary: negro,
-    surface: negro,
+    surface:negro, 
     onSurface: blanco,
     error: const Color.fromARGB(255, 255, 17, 0),
     onError: blanco,
@@ -76,11 +76,12 @@ final ThemeData gymTrackTheme = ThemeData(
   suffixStyle: GoogleFonts.rajdhani(color: blanco),
   ),
   textTheme: TextTheme(
-    bodyMedium: GoogleFonts.rajdhani(fontSize: 16, color: negro),
-    labelLarge: GoogleFonts.rajdhani(fontSize: 18, color: negro),
-    headlineSmall: GoogleFonts.orbitron(fontSize: 24, fontWeight: FontWeight.bold, color: negro),
-    headlineMedium: GoogleFonts.orbitron(fontSize: 28, fontWeight: FontWeight.bold, color: negro),
-  ),
+  bodyMedium: GoogleFonts.rajdhani(fontSize: 16, color: blanco),
+  labelLarge: GoogleFonts.rajdhani(fontSize: 18, color: blanco),
+  headlineSmall: GoogleFonts.orbitron(fontSize: 24, fontWeight: FontWeight.bold, color: blanco),
+  headlineMedium: GoogleFonts.orbitron(fontSize: 28, fontWeight: FontWeight.bold, color: blanco),
+),
+
   appBarTheme: AppBarTheme(
 
   elevation: 0,

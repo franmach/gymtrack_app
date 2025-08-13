@@ -8,7 +8,6 @@ class RutinaService {
     final ai = AiService();
 
     try {
-      //Obtener rutina desde AI
       final rutinaJson = await ai.generarRutinaComoJson(
         edad: usuario.edad,
         peso: usuario.peso,
@@ -50,5 +49,56 @@ class RutinaService {
       print('Error al generar rutina: $e');
       rethrow;
     }
+  }
+
+  static Future<void> guardarRutinaAjustada({
+    required String uid,
+    required String nivelExperiencia,
+    required String objetivo,
+    required Map<String, dynamic> rutinaJson,
+  }) async {
+    final rutinasRef = FirebaseFirestore.instance.collection('rutinas');
+
+    // Desactivar rutina actual
+    final snapshot = await rutinasRef
+        .where('uid', isEqualTo: uid)
+        .where('es_actual', isEqualTo: true)
+        .get();
+
+    for (final doc in snapshot.docs) {
+      await doc.reference.update({'es_actual': false});
+    }
+
+    // Normalizar estructura de días
+    dynamic diasRaw = rutinaJson['rutina'] ?? rutinaJson['dias'] ?? [];
+    List<dynamic> diasLista;
+
+    if (diasRaw is Map) {
+      diasLista = diasRaw.entries
+          .map((e) => {
+                'dia': e.key,
+                'ejercicios': e.value,
+              })
+          .toList();
+    } else if (diasRaw is List) {
+      diasLista = diasRaw;
+    } else {
+      diasLista = [];
+    }
+
+    // Guardar nueva rutina ajustada
+    await rutinasRef.add({
+      'uid': uid,
+      'fecha_generacion': DateTime.now().toIso8601String(),
+      'es_actual': true,
+      'generada_automaticamente': true,
+      'objetivo': objetivo,
+      'nivel': rutinaJson['nivel'] ?? nivelExperiencia, // << CORREGIDO
+      'dias_por_semana': diasLista.length,
+      'min_por_sesion': rutinaJson['min_por_sesion'] ?? 45,
+      'rutina': diasLista,
+    });
+
+    print('✅ Rutina ajustada guardada correctamente');
   }
 }

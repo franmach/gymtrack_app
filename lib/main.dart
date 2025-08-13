@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'gymtrack_theme.dart'; // Importás tu tema
+import 'gymtrack_theme.dart'; 
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'screens/auth/register_screen.dart';

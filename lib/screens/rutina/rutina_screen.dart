@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class RutinaScreen extends StatefulWidget {
   final String rutinaId;
@@ -20,18 +19,19 @@ class _RutinaScreenState extends State<RutinaScreen> {
     _cargarRutina();
   }
 
-Future<void> _cargarRutina() async {
-  final doc = await FirebaseFirestore.instance
-      .collection('rutinas')
-      .doc(widget.rutinaId)
-      .get();
+  Future<void> _cargarRutina() async {
+    final doc = await FirebaseFirestore.instance
+        .collection('rutinas')
+        .doc(widget.rutinaId)
+        .get();
 
-  if (doc.exists) {
-    setState(() {
-      rutina = doc.data();
-    });
+    if (doc.exists) {
+      setState(() {
+        rutina = doc.data();
+      });
+    }
   }
-}
+
   @override
   Widget build(BuildContext context) {
     if (rutina == null) {
@@ -59,7 +59,7 @@ Future<void> _cargarRutina() async {
               return ListTile(
                 title: Text(ej['nombre']),
                 subtitle: Text(
-                    '${ej['grupo_muscular']} — ${ej['series']}x${ej['repeticiones']}'),
+                    '${ej['grupo_muscular'] ?? ej['grupoMuscular'] ?? ''} — Series:  ${ej['series']} — Repeticiones: ${ej['repeticiones']}'),
               );
             }).toList(),
           );

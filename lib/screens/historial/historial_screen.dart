@@ -29,24 +29,28 @@ class _HistorialScreenState extends State<HistorialScreen> {
 
   Future<void> cargarSesiones() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
+
     if (uid == null) return;
 
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('sesiones')
-          .where('userId', isEqualTo: uid)
+          .where('uid', isEqualTo: uid)
           .orderBy('date', descending: true)
           .get();
 
       sesiones = snapshot.docs
           .map((doc) {
             final data = doc.data();
+
             if (data['date'] == null || data['exercises'] == null) return null;
             return data;
           })
           .whereType<Map<String, dynamic>>()
           .toList();
-    } catch (e) {
+    } catch (e, st) {
+      print('Error al cargar sesiones: $e');
+      print(st);
     } finally {
       setState(() {
         cargando = false;
