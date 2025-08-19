@@ -4,7 +4,7 @@ import 'firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:gymtrack_app/services/ai_service.dart';
-import 'package:gymtrack_app/services/nutrition_ai_service.dart';
+import 'package:gymtrack_app/services/planNutricional/nutrition_ai_service.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/perfil/perfil_screen.dart';

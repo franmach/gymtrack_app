@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gymtrack_app/models/ejercicioAsignado.dart';
-import 'package:gymtrack_app/services/routine_service.dart';
+import 'package:gymtrack_app/services/rutinas/routine_service.dart';
 import 'session_screen.dart';
 
 class DaySelectionScreen extends StatefulWidget {

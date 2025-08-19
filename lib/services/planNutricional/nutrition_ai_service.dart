@@ -4,9 +4,9 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:dart_openai/dart_openai.dart';
 import 'package:uuid/uuid.dart';
 
-import '../models/comidaPlanItem.dart';
-import '../models/comida.dart';
-import '../models/infoNutricional.dart';
+import '../../models/comidaPlanItem.dart';
+import '../../models/comida.dart';
+import '../../models/infoNutricional.dart';
 
 /// Servicio que maneja la generación de planes alimenticios usando IA.
 /// Primero intenta con Gemini y si hay error 503 (límite agotado), usa OpenAI como fallback.

@@ -3,13 +3,18 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:gymtrack_app/screens/historial/historial_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gymtrack_app/main.dart';
-import 'package:gymtrack_app/services/firestore_routine_service.dart';
+import 'package:gymtrack_app/services/rutinas/firestore_routine_service.dart';
 import 'package:gymtrack_app/screens/session/day_selection_screen.dart';
 import 'package:gymtrack_app/screens/session/timer_screen.dart';
 import 'package:gymtrack_app/screens/admin/gimnasio_screen.dart';
-import 'package:gymtrack_app/screens/nutricion/nutrition_plan_screen.dart'; // Nueva pantalla de Plan Alimenticio
+import 'package:gymtrack_app/screens/nutricion/nutrition_plan_screen.dart';
 
-/// DashboardScreen: Pantalla principal tras iniciar sesión
+// 👇 nuevos
+import 'package:gymtrack_app/screens/chatbot/chatbot_screen.dart';
+import 'package:gymtrack_app/services/chatbot/firestore_faq_service.dart';
+import 'package:gymtrack_app/services/chatbot/hybrid_chat_service.dart';
+import 'package:gymtrack_app/services/chatbot/gemini_chat_service.dart';
+
 typedef DocSnapshot = DocumentSnapshot<Map<String, dynamic>>;
 
 class DashboardScreen extends StatelessWidget {
@@ -23,8 +28,7 @@ class DashboardScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Dashboard')),
       body: Center(
         child: FutureBuilder<DocSnapshot>(
-          future:
-              FirebaseFirestore.instance.collection('rutinas').doc(uid).get(),
+          future: FirebaseFirestore.instance.collection('rutinas').doc(uid).get(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const CircularProgressIndicator();
@@ -45,7 +49,6 @@ class DashboardScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
 
-                // Botón de iniciar entrenamiento
                 ElevatedButton(
                   onPressed: () {
                     Navigator.of(context).push(
@@ -61,27 +64,21 @@ class DashboardScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
-                // Botón para acceder al historial de entrenamientos
                 ElevatedButton(
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => const HistorialScreen(),
-                      ),
+                      MaterialPageRoute(builder: (_) => const HistorialScreen()),
                     );
                   },
                   child: const Text('Historial'),
                 ),
                 const SizedBox(height: 12),
 
-                // Botón para acceder al temporizador
                 ElevatedButton.icon(
                   onPressed: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const TimerScreen(),
-                      ),
+                      MaterialPageRoute(builder: (_) => const TimerScreen()),
                     );
                   },
                   icon: const Icon(Icons.timer),
@@ -90,19 +87,33 @@ class DashboardScreen extends StatelessWidget {
 
                 const SizedBox(height: 24),
 
-                // Botón para acceder al Plan Alimenticio
                 ElevatedButton.icon(
                   onPressed: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const NutritionPlanScreen(),
-                      ),
+                      MaterialPageRoute(builder: (_) => const NutritionPlanScreen()),
                     );
                   },
                   icon: const Icon(Icons.restaurant_menu),
                   label: const Text('Plan Alimenticio'),
                 ),
                 const SizedBox(height: 12),
+
+                // 👇 NUEVO: Chatbot Interactivo
+                ElevatedButton.icon(
+  onPressed: () {
+    final chatService = HybridChatService(
+      local: FirestoreFaqService(),
+      fallback: GeminiChatService(),
+    );
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ChatbotScreen(chat: chatService),
+      ),
+    );
+  },
+  icon: const Icon(Icons.chat_bubble_outline),
+  label: const Text('Chatbot Interactivo'),
+),
 
                 ElevatedButton(
                   onPressed: () => Navigator.pushNamed(context, '/profile'),
@@ -114,17 +125,14 @@ class DashboardScreen extends StatelessWidget {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                          builder: (context) => const GimnasioScreen()),
+                      MaterialPageRoute(builder: (context) => const GimnasioScreen()),
                     );
                   },
                 ),
 
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
-                  ),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
                   onPressed: () async {
                     await FirebaseAuth.instance.signOut();
                     Navigator.pushAndRemoveUntil(

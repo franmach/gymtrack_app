@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:gymtrack_app/models/usuario.dart';
-import 'package:gymtrack_app/services/rutina_service.dart';
+import 'package:gymtrack_app/services/rutinas/rutina_service.dart';
 import 'package:gymtrack_app/screens/rutina/rutina_screen.dart';
 
 class MisRutinasScreen extends StatelessWidget {

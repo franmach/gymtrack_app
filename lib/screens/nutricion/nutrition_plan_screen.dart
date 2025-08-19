@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 
 // Servicios y modelos
-import 'package:gymtrack_app/services/nutrition_ai_service.dart';
+import 'package:gymtrack_app/services/planNutricional/nutrition_ai_service.dart';
 import 'package:gymtrack_app/models/comidaPlanItem.dart';
 import 'package:gymtrack_app/models/planAlimenticio.dart';
 

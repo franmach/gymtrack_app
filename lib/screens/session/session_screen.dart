@@ -6,7 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:gymtrack_app/models/ejercicioAsignado.dart';
-import 'package:gymtrack_app/services/routine_service.dart';
+import 'package:gymtrack_app/services/rutinas/routine_service.dart';
 
 class SesionScreen extends StatefulWidget {
   final RoutineService service;
