@@ -32,8 +32,10 @@ dependencies:
   # Gráficos
   fl_chart: ^0.64.0
 
+
   # IA (Gemini)
   google_generative_ai: ^0.4.7
+  dart_openai: ^5.1.0
 
   # Extras
   http: ^1.2.1

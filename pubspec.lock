@@ -81,6 +81,7 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.2.1"
+
   boolean_selector:
     dependency: transitive
     description:
@@ -169,6 +170,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.6"
+  dart_openai:
+    dependency: "direct main"
+    description:
+      name: dart_openai
+      sha256: "853bb57fed6a71c3ba0324af5cb40c16d196cf3aa55b91d244964ae4a241ccf1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.1.0"
   dbus:
     dependency: transitive
     description:
