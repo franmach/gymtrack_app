@@ -10,6 +10,7 @@ import 'screens/auth/register_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/perfil/perfil_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -39,21 +40,7 @@ Future<void> main() async {
 
   await flutterLocalNotificationsPlugin.initialize(initializationSettings);
 
-  runApp(
-    MultiProvider(
-      providers: [
-        // Servicio genérico de AI usando Gemini 1.5 Flash
-        Provider<AiService>(
-          create: (_) => AiService(),
-        ),
-        // Servicio de nutrición que reusa AiService
-        Provider<NutritionAIService>(
-          create: (ctx) => NutritionAIService(),
-        ),
-      ],
-      child: const GymTrackApp(),
-    ),
-  );
+  runApp(const GymTrackApp());
 }
 
 class GymTrackApp extends StatelessWidget {
