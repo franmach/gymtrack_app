@@ -33,13 +33,17 @@ dependencies:
   # Gráficos
   fl_chart: ^0.66.2
 
+
   # IA (Gemini)
   google_generative_ai: ^0.4.7
+  dart_openai: ^5.1.0
 
   # Extras
   http: ^1.2.1
   flutter_local_notifications: ^17.1.2
   intl: ^0.18.1
+  google_fonts: ^6.1.0
+
 
 dev_dependencies:
   flutter_test:

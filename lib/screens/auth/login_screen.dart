@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:gymtrack_app/screens/dashboard/dashboard_screen.dart';
-import 'package:gymtrack_app/screens/auth/forgotPassword_screen.dart'; 
+import 'package:gymtrack_app/screens/auth/forgotPassword_screen.dart';
 
 /// Pantalla de Login con Firebase Auth y navegación al Dashboard
 class LoginScreen extends StatefulWidget {
@@ -91,7 +91,24 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Iniciar Sesión')),
+      appBar: AppBar(
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              '/images/2.png', // ruta del ícono
+              height: 50,
+            ),
+            const SizedBox(width: 20), // espacio entre ícono y texto
+            Text(
+              'Iniciar Sesión',
+              style: Theme.of(context)
+                  .appBarTheme
+                  .titleTextStyle, // usa Orbitron si está definido
+            ),
+          ],
+        ),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -168,8 +185,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     : const Text('Entrar'),
               ),
 
-              
-
               // Enlace de recuperación de contraseña
               Align(
                 alignment: Alignment.centerRight,
@@ -185,7 +200,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: const Text('¿Olvidaste tu contraseña?'),
                 ),
               ),
-            ],           
+            ],
           ),
         ),
       ),

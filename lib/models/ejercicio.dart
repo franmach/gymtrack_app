@@ -19,7 +19,7 @@ class Ejercicio {
         id: m['id'] as String,
         nombre: m['nombre'] as String,
         tipo: m['tipo'] as String,
-        grupoMuscular: m['grupo_muscular'] as String,
+        grupoMuscular: m['grupo_muscular'] ?? m['grupoMuscular'] ?? '',
         dificultad: m['dificultad'] as String,
         equipamiento: m['equipamiento'] as String,
       );
