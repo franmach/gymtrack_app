@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:gymtrack_app/screens/historial/historial_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gymtrack_app/main.dart';
+import 'package:gymtrack_app/screens/notificacion/notificaciones_screen.dart';
 import 'package:gymtrack_app/services/firestore_routine_service.dart';
 import 'package:gymtrack_app/screens/session/day_selection_screen.dart';
 import 'package:gymtrack_app/screens/session/timer_screen.dart';
@@ -122,6 +123,20 @@ class DashboardScreen extends StatelessWidget {
                   onPressed: () => Navigator.pushNamed(context, '/profile'),
                   child: const Text('Perfil'),
                 ),
+                // Botón para acceder a notificaciones personalizadas
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            ConfigNotificacionesScreen(usuarioId: uid),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.notifications),
+                  label: const Text('Notificaciones'),
+                ),
+                const SizedBox(height: 12),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.fitness_center),
                   label: const Text('Gimnasio'),

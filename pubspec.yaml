@@ -8,6 +8,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  timezone: ^0.9.4 
 
   # Firebase
   firebase_core: ^2.30.0
@@ -22,8 +23,8 @@ dependencies:
   # Detección de estado de la red (online/offline)
   connectivity_plus: ^4.0.0  # Permite reaccionar a cambios de conexión
 
-  vibration: ^1.7.4         # Para vibración
-  audioplayers: 6.5.0      # Para reproducir sonidos
+  #vibration: ^1.8.4        # Para vibración
+  #audioplayers: ^5.2.1      # Para reproducir sonidos
 
   # Estado y configuración
   provider: ^6.1.2
