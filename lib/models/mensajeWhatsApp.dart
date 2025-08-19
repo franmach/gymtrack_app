@@ -1,4 +1,4 @@
-class MensajeWhatsApp {
+/*class MensajeWhatsApp {
   final String id;
   final String entrenadorId;
   final String mensaje;
@@ -29,3 +29,4 @@ class MensajeWhatsApp {
         'medio': medio,
       };
 }
+*/
