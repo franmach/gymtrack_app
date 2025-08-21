@@ -65,7 +65,7 @@ Ejemplo de respuesta esperada:
           "series": 4,
           "repeticiones": 12,
           "descanso_segundos": 60
-          "peso": 20.5 // Este campo es opcional dependiendo el ejercicio y el usuario
+          "peso": 20.5 // "Incluí el campo 'peso' en todos los ejercicios donde sea relevante, independientemente del nivel de experiencia del usuario."
 
         }
       ]

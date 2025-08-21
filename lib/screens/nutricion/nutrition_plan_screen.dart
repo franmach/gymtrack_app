@@ -56,7 +56,7 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
   /// Cargar los datos del perfil de Firestore
   Future<void> _loadUserProfile() async {
     final uid = _auth.currentUser!.uid;
-    final doc = await _firestore.collection('users').doc(uid).get();
+    final doc = await _firestore.collection('usuarios').doc(uid).get();
     if (doc.exists) {
       setState(() {
         userProfile = doc.data()!;
