@@ -56,3 +56,4 @@ flutter:
   assets:
     - .env
     - assets/images/profile_placeholder.png
+    - assets/badges/

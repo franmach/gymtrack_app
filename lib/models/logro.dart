@@ -8,6 +8,7 @@ class Logro {
   final String tipo;
   final String? periodo;
   final DateTime otorgadoEn;
+  final String? badge;
 
   Logro({
     required this.id,
@@ -17,6 +18,7 @@ class Logro {
     required this.tipo,
     this.periodo,
     required this.otorgadoEn,
+    this.badge,
   });
 
   static Logro fromFirestore(
@@ -32,15 +34,17 @@ class Logro {
       tipo: data['tipo'] ?? '',
       periodo: data['periodo'],
       otorgadoEn: (data['otorgadoEn'] as Timestamp).toDate(),
+      badge: data['badge'],
     );
   }
 
   Map<String, Object?> toFirestore() => {
-    'nombre': nombre,
-    'descripcion': descripcion,
-    'puntosOtorgados': puntosOtorgados,
-    'tipo': tipo,
-    if (periodo != null) 'periodo': periodo,
-    'otorgadoEn': Timestamp.fromDate(otorgadoEn),
-  };
+        'nombre': nombre,
+        'descripcion': descripcion,
+        'puntosOtorgados': puntosOtorgados,
+        'tipo': tipo,
+        if (periodo != null) 'periodo': periodo,
+        'otorgadoEn': Timestamp.fromDate(otorgadoEn),
+        if (badge != null) 'badge': badge,
+      };
 }

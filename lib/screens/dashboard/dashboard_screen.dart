@@ -15,8 +15,39 @@ import 'package:gymtrack_app/screens/nutricion/nutrition_plan_screen.dart'; // N
 /// DashboardScreen: Pantalla principal tras iniciar sesión
 typedef DocSnapshot = DocumentSnapshot<Map<String, dynamic>>;
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _ajustarRutinaSiCorresponde();
+  }
+
+  Future<void> _ajustarRutinaSiCorresponde() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final firestore = FirebaseFirestore.instance;
+    final userDoc = await firestore.collection('usuarios').doc(uid).get();
+    if (!userDoc.exists) return;
+
+    final usuario = Usuario.fromMap(userDoc.data()!, uid);
+    final ajusteService = AjusteRutinaService(
+      firestore: firestore,
+      aiService: AiService(),
+    );
+    try {
+      await ajusteService.ajustarRutinaMensual(usuario);
+    } catch (e) {
+      print('❌ Error en ajuste automático: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +63,7 @@ class DashboardScreen extends StatelessWidget {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const CircularProgressIndicator();
             }
-           
+
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -102,15 +133,16 @@ class DashboardScreen extends StatelessWidget {
                   child: const Text('Ajustar rutina automáticamente (TEST)'),
                 ),
 
+                const SizedBox(height: 12),
+
                 // Botón para acceder al historial de entrenamientos
                 ElevatedButton(
                   onPressed: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) =>  HistorialScreen(),
+                        builder: (_) => HistorialScreen(),
                       ),
-                      
                     );
                   },
                   child: const Text('Historial'),

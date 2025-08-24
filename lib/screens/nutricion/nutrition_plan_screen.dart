@@ -85,8 +85,7 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
         excludedFoods = List.from(plan.excludedFoods);
         weeklyPlan = {
           for (var item in plan.weeklyPlan)
-            item.day:
-                plan.weeklyPlan.where((e) => e.day == item.day).toList()
+            item.day: plan.weeklyPlan.where((e) => e.day == item.day).toList()
         };
       });
     }
@@ -221,8 +220,8 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
                       children: excludedFoods
                           .map((e) => Chip(
                                 label: Text(e),
-                                onDeleted: () => setState(
-                                    () => excludedFoods.remove(e)),
+                                onDeleted: () =>
+                                    setState(() => excludedFoods.remove(e)),
                               ))
                           .toList(),
                     ),
@@ -245,29 +244,66 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
                             fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
-                      ...weeklyPlan.entries.map((entry) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              entry.key,
-                              style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600),
-                            ),
-                            ...entry.value.map((item) => ListTile(
-                                title: Text(item.comida.nombre),
-                                subtitle: Text(
-                                  '${item.comida.macros.proteinGrams}g proteína • '
-                                  '${item.comida.macros.calories.toStringAsFixed(0)} kcal • '
-                                  '${item.portion} porción'
-                                  '${item.tipo.isNotEmpty ? ' • ${item.tipo}' : ''}'
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: weeklyPlan.entries.map((entry) {
+                          return SizedBox(
+                            width: MediaQuery.of(context).size.width *
+                                0.47, // casi la mitad
+                            child: Card(
+                              color: Colors.black,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                              elevation: 4,
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      entry.key,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    ...entry.value.map((item) => Card(
+                                          color: Colors.grey[900],
+                                          margin: const EdgeInsets.symmetric(
+                                              vertical: 4),
+                                          shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8)),
+                                          child: ListTile(
+                                            leading: Icon(
+                                              _getTipoIcon(item.tipo),
+                                              color: Theme.of(context).primaryColor,
+                                            ),
+                                            title: Text(
+                                              item.comida.nombre,
+                                              style: const TextStyle(
+                                                  color: Colors.white),
+                                            ),
+                                            subtitle: Text(
+                                              '${item.comida.macros.proteinGrams}g proteína • '
+                                              '${item.comida.macros.calories.toStringAsFixed(0)} kcal • '
+                                              '${item.portion} porción'
+                                              '${item.tipo.isNotEmpty ? ' • ${item.tipo}' : ''}',
+                                              style: const TextStyle(
+                                                  color: Colors.white70),
+                                            ),
+                                          ),
+                                        )),
+                                  ],
                                 ),
-                              )),
-                          ],
-                        );
-                      }).toList(),
-
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
                       const SizedBox(height: 24),
                       Center(
                         child: ElevatedButton(
@@ -281,5 +317,20 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
               ),
       ),
     );
+  }
+
+  IconData _getTipoIcon(String tipo) {
+    switch (tipo.toLowerCase()) {
+      case 'desayuno':
+        return Icons.free_breakfast; // desayuno
+      case 'almuerzo':
+        return Icons.lunch_dining; // almuerzo
+      case 'merienda':
+        return Icons.emoji_food_beverage; // merienda
+      case 'cena':
+        return Icons.nightlife; // cena
+      default:
+        return Icons.restaurant_menu;
+    }
   }
 }
