@@ -1,6 +1,8 @@
 // ... imports existentes ...
 import 'dart:convert';
-
+import 'package:gymtrack_app/services/gamification_service.dart';
+import 'package:gymtrack_app/services/gamification_repository.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -169,10 +171,20 @@ class _SesionScreenState extends State<SesionScreen> {
             content: Text('Sin conexión: sesión guardada localmente')),
       );
     } else {
-      await FirebaseFirestore.instance.collection('sesiones').add(doc);
+      final docRef =
+          await FirebaseFirestore.instance.collection('sesiones').add(doc);
+      final sesionId = docRef.id;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Sesión guardada exitosamente')),
       );
+      // --- INTEGRACIÓN GAMIFICACIÓN ---
+      final gamificationRepo = GamificationRepository(
+          FirebaseFirestore.instance, FirebaseAuth.instance);
+      final gamificationService = GamificationService(gamificationRepo);
+      await gamificationService.onSesionCompletada(
+          widget.userId, DateTime.now(),
+          sesionId: sesionId);
+      // --- FIN INTEGRACIÓN ---
     }
 
     await _prefs.remove(_localKey);
