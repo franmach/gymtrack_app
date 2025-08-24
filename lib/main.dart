@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'gymtrack_theme.dart'; 
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -43,10 +44,8 @@ class GymTrackApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'GymTrack',
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
-      ),
+      debugShowCheckedModeBanner: false,
+      theme: gymTrackTheme,
       home: const HomeScreen(),
       routes: {
         '/profile': (context) => const PerfilScreen(),
@@ -62,34 +61,54 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Bienvenido a GymTrack')),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ElevatedButton(
-              child: const Text('Registrarse'),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const RegisterScreen()),
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              child: const Text('Iniciar Sesión'),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                );
-              },
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Logo
+              Image.asset(
+                '/images/logo.png',
+                width: 300,
+                height: 300,
+              ),
+
+              // Botón de registro
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                    );
+                  },
+                  child: const Text('Registrarse'),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Botón de login
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    );
+                  },
+                  child: const Text('Iniciar Sesión'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+
 }
+

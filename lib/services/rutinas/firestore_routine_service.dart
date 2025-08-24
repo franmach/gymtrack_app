@@ -6,36 +6,50 @@ import 'routine_service.dart';
 class FirestoreRoutineService implements RoutineService {
   @override
   Future<List<String>> fetchRoutineDays(String userId) async {
-    final doc = await FirebaseFirestore.instance
+    final query = await FirebaseFirestore.instance
         .collection('rutinas')
-        .doc(userId)
+        .where('uid', isEqualTo: userId)
+        .where('es_actual', isEqualTo: true)
+        .limit(1)
         .get();
-    if (!doc.exists) return [];
-    final diasRaw = (doc.data()!['rutina'] as List<dynamic>);
+
+    if (query.docs.isEmpty) return [];
+
+    final diasRaw = (query.docs.first.data()['rutina'] as List<dynamic>);
     return diasRaw.map((d) => d['dia'] as String).toList();
   }
 
   @override
   Future<List<EjercicioAsignado>> fetchExercisesForDay(
       String userId, String day) async {
-    final doc = await FirebaseFirestore.instance
+    final query = await FirebaseFirestore.instance
         .collection('rutinas')
-        .doc(userId)
+        .where('uid', isEqualTo: userId)
+        .where('es_actual', isEqualTo: true)
+        .limit(1)
         .get();
-    if (!doc.exists) return [];
-    final diasRaw = (doc.data()!['rutina'] as List<dynamic>);
-    final diaMap =
-        diasRaw.firstWhere((d) => d['dia'] == day, orElse: () => null);
+
+    if (query.docs.isEmpty) return [];
+
+    final diasRaw = (query.docs.first.data()['rutina'] as List<dynamic>);
+    final diaMap = diasRaw.firstWhere(
+      (d) => d['dia'] == day,
+      orElse: () => null,
+    );
     if (diaMap == null) return [];
+
     final ejerciciosRaw = diaMap['ejercicios'] as List<dynamic>;
     return ejerciciosRaw.map((ej) {
       final m = ej as Map<String, dynamic>;
       return EjercicioAsignado(
-        nombre: m['nombre'] as String,
-        grupoMuscular: m['grupo_muscular'] as String,
-        series: m['series'] as int,
-        repeticiones: m['repeticiones'] as int,
-        descansoSegundos: m['descanso_segundos'] as int,
+        nombre: (m['nombre'] ?? '').toString(),
+        grupoMuscular:
+            (m['grupo_muscular'] ?? m['grupoMuscular'] ?? 'Sin especificar')
+                .toString(),
+        series: (m['series'] ?? 0) as int,
+        repeticiones: (m['repeticiones'] ?? m['reps'] ?? 0) as int,
+        peso: m['peso'] != null ? (m['peso'] as num).toDouble() : null,
+        descansoSegundos: (m['descanso_segundos'] ?? 0) as int,
       );
     }).toList();
   }

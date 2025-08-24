@@ -7,6 +7,9 @@ import 'package:gymtrack_app/services/rutinas/firestore_routine_service.dart';
 import 'package:gymtrack_app/screens/session/day_selection_screen.dart';
 import 'package:gymtrack_app/screens/session/timer_screen.dart';
 import 'package:gymtrack_app/screens/admin/gimnasio_screen.dart';
+import 'package:gymtrack_app/models/usuario.dart';
+import 'package:gymtrack_app/services/ajuste_rutina_service.dart';
+import 'package:gymtrack_app/services/ai_service.dart';
 import 'package:gymtrack_app/screens/nutricion/nutrition_plan_screen.dart';
 
 // 👇 nuevos
@@ -33,13 +36,14 @@ class DashboardScreen extends StatelessWidget {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const CircularProgressIndicator();
             }
+            /*
             if (!snapshot.hasData || !snapshot.data!.exists) {
               return const Text(
                 'Aún no tienes una rutina generada.',
                 textAlign: TextAlign.center,
               );
             }
-
+*/
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -65,10 +69,57 @@ class DashboardScreen extends StatelessWidget {
                 const SizedBox(height: 12),
 
                 ElevatedButton(
+                  onPressed: () async {
+                    print('▶ BOTÓN PRESIONADO');
+
+                    final firestore = FirebaseFirestore.instance;
+                    final ai = AiService();
+
+                    final uid = FirebaseAuth.instance.currentUser?.uid;
+                    print('▶ UID del usuario: $uid');
+
+                    if (uid == null) {
+                      print('❌ UID nulo, el usuario no está logueado.');
+                      return;
+                    }
+
+                    final userDoc =
+                        await firestore.collection('usuarios').doc(uid).get();
+                    print('▶ Documento de usuario existe: ${userDoc.exists}');
+
+                    if (!userDoc.exists) {
+                      print(
+                          '❌ El documento del usuario no existe en Firestore.');
+                      return;
+                    }
+
+                    final usuario = Usuario.fromMap(userDoc.data()!, uid);
+
+                    final ajusteService = AjusteRutinaService(
+                      firestore: firestore,
+                      aiService: ai,
+                    );
+
+                    try {
+                      print('▶ Ejecutando ajuste...');
+                      await ajusteService.ajustarRutinaMensual(usuario);
+                      print('✅ Ajuste completado con éxito.');
+                    } catch (e, stack) {
+                      print('❌ Error al ejecutar ajuste automático: $e');
+                      print(stack);
+                    }
+                  },
+                  child: const Text('Ajustar rutina automáticamente (TEST)'),
+                ),
+
+                ElevatedButton(
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const HistorialScreen()),
+                      MaterialPageRoute(
+                        builder: (_) =>  HistorialScreen(),
+                      ),
+                      
                     );
                   },
                   child: const Text('Historial'),

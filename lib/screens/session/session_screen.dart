@@ -1,3 +1,4 @@
+// ... imports existentes ...
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -25,13 +26,30 @@ class SesionScreen extends StatefulWidget {
 }
 
 class _SesionScreenState extends State<SesionScreen> {
+  void _updateCompletionStates() {
+    for (int i = 0; i < _exercises.length; i++) {
+      final e = _exercises[i];
+      final repsRealizadas = int.tryParse(_doneCtrls[i].text) ?? 0;
+      final pesoUsado = double.tryParse(_pesoCtrls[i].text) ?? 0;
+      final repsPlanificadas = e.series * e.repeticiones;
+      final pesoPlanificado = e.peso ?? 0;
+      final isCompleted = repsRealizadas == repsPlanificadas &&
+          (pesoPlanificado == 0 || pesoUsado == pesoPlanificado);
+      final isIncomplete =
+          !isCompleted && (repsRealizadas > 0 || pesoUsado > 0);
+      _completed[i] = isCompleted;
+      _incomplete[i] = isIncomplete;
+    }
+  }
+
   List<EjercicioAsignado> _exercises = [];
   late List<TextEditingController> _doneCtrls;
   late List<bool> _completed;
   late List<bool> _incomplete;
   late SharedPreferences _prefs;
   final _localKey = 'session_partial';
-
+  final _comentarioGeneralCtrl = TextEditingController();
+  late List<TextEditingController> _pesoCtrls;
   @override
   void initState() {
     super.initState();
@@ -48,10 +66,12 @@ class _SesionScreenState extends State<SesionScreen> {
   }
 
   Future<void> _loadExercises() async {
-    final list = await widget.service.fetchExercisesForDay(widget.userId, widget.day);
+    final list =
+        await widget.service.fetchExercisesForDay(widget.userId, widget.day);
     _doneCtrls = List.generate(list.length, (_) => TextEditingController());
     _completed = List.filled(list.length, false);
     _incomplete = List.filled(list.length, false);
+    _pesoCtrls = List.generate(list.length, (_) => TextEditingController());
     setState(() => _exercises = list);
   }
 
@@ -95,7 +115,13 @@ class _SesionScreenState extends State<SesionScreen> {
 
   @override
   void dispose() {
-    for (var c in _doneCtrls) c.dispose();
+    for (var c in _doneCtrls) {
+      c.dispose();
+    }
+    for (var c in _pesoCtrls) {
+      c.dispose();
+    }
+    _comentarioGeneralCtrl.dispose();
     super.dispose();
   }
 
@@ -103,24 +129,30 @@ class _SesionScreenState extends State<SesionScreen> {
     for (int i = 0; i < _exercises.length; i++) {
       if (!_completed[i] && !_incomplete[i]) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Marca completado o incompleto para "${_exercises[i].nombre}"')),
+          SnackBar(
+              content: Text(
+                  'Marca completado o incompleto para "${_exercises[i].nombre}"')),
         );
         return;
       }
     }
 
     final doc = {
-      'userId': widget.userId,
+      'uid': widget.userId,
       'day': widget.day,
       'date': Timestamp.now(),
+      'comentario_general': _comentarioGeneralCtrl.text.trim(),
       'exercises': List.generate(_exercises.length, (i) {
         final e = _exercises[i];
+        final pesoUsado = double.tryParse(_pesoCtrls[i].text);
         return {
           'nombre': e.nombre,
           'grupoMuscular': e.grupoMuscular,
           'series': e.series,
-          'repsPlanificadas': e.repeticiones,
+          'repsPlanificadas': e.series * e.repeticiones,
           'repsRealizadas': int.tryParse(_doneCtrls[i].text) ?? 0,
+          'pesoPlanificado': e.peso,
+          'peso_usado': (pesoUsado != null && pesoUsado > 0) ? pesoUsado : null,
           'completed': _completed[i],
           'incomplete': _incomplete[i],
         };
@@ -133,7 +165,8 @@ class _SesionScreenState extends State<SesionScreen> {
       pending.add(json.encode(doc));
       await _prefs.setStringList('pending_sessions', pending);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sin conexión: sesión guardada localmente')),
+        const SnackBar(
+            content: Text('Sin conexión: sesión guardada localmente')),
       );
     } else {
       await FirebaseFirestore.instance.collection('sesiones').add(doc);
@@ -141,13 +174,17 @@ class _SesionScreenState extends State<SesionScreen> {
         const SnackBar(content: Text('Sesión guardada exitosamente')),
       );
     }
+
     await _prefs.remove(_localKey);
     Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
-    final allChecked = _exercises.isNotEmpty && List.generate(_exercises.length, (i) => _completed[i] || _incomplete[i]).every((v) => v);
+    _updateCompletionStates();
+    final allChecked = _exercises.isNotEmpty &&
+        List.generate(_exercises.length, (i) => _completed[i] || _incomplete[i])
+            .every((v) => v);
 
     return Scaffold(
       appBar: AppBar(title: Text('Sesión de ${widget.day}')),
@@ -156,98 +193,212 @@ class _SesionScreenState extends State<SesionScreen> {
           : Column(
               children: [
                 Expanded(
-                  child: ListView.builder(
+                  child: ListView(
                     padding: const EdgeInsets.all(16),
-                    itemCount: _exercises.length,
-                    itemBuilder: (_, i) {
-                      final e = _exercises[i];
-                      final locked = _completed[i] || _incomplete[i];
-                      return Card(
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(e.nombre, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 4),
-                              Text(e.grupoMuscular, style: const TextStyle(color: Colors.grey)),
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('Series: ${e.series}'),
-                                      Text('Reps: ${e.repeticiones}'),
-                                    ],
-                                  ),
-                                  const SizedBox(width: 24),
-                                  Expanded(
-                                    child: TextField(
-                                      controller: _doneCtrls[i],
-                                      enabled: !locked,
-                                      keyboardType: TextInputType.number,
-                                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                                      decoration: const InputDecoration(
-                                        labelText: 'Rep. totales realizadas',
-                                        isDense: true,
-                                        contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                                      ),
-                                      onChanged: (_) => _savePartial(),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Column(
-                                    children: [
-                                      const Text('Completado'),
-                                      Checkbox(
-                                        value: _completed[i],
-                                        onChanged: (val) {
-                                          setState(() {
-                                            _completed[i] = val!;
-                                            if (val) _incomplete[i] = false;
-                                          });
-                                          _savePartial();
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Column(
-                                    children: [
-                                      const Text('Incompleto'),
-                                      Checkbox(
-                                        value: _incomplete[i],
-                                        onChanged: (val) {
-                                          setState(() {
-                                            _incomplete[i] = val!;
-                                            if (val) _completed[i] = false;
-                                          });
-                                          _savePartial();
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
+                    children: [
+                      for (int i = 0; i < _exercises.length; i++)
+                        _buildExerciseCard(i),
+                      const SizedBox(height: 24),
+                      TextField(
+                        controller: _comentarioGeneralCtrl,
+                        maxLines: 3,
+                        decoration: const InputDecoration(
+                          labelText:
+                              'Comentario general de la sesión (opcional)',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                          contentPadding: EdgeInsets.all(12),
                         ),
-                      );
-                    },
+                      ),
+                    ],
                   ),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: ElevatedButton(
                     onPressed: allChecked ? _finishSession : null,
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                    ),
                     child: const Text('Entrenamiento finalizado'),
                   ),
                 ),
               ],
             ),
+    );
+  }
+
+  Widget _buildExerciseCard(int i) {
+    final e = _exercises[i];
+    // Calcular si el ejercicio está completo/incompleto automáticamente
+    final repsRealizadas = int.tryParse(_doneCtrls[i].text) ?? 0;
+    final pesoUsado = double.tryParse(_pesoCtrls[i].text) ?? 0;
+    final repsPlanificadas = e.series * e.repeticiones;
+    final pesoPlanificado = e.peso ?? 0;
+    final isCompleted = repsRealizadas == repsPlanificadas &&
+        (pesoPlanificado == 0 || pesoUsado == pesoPlanificado);
+    final isIncomplete = !isCompleted && (repsRealizadas > 0 || pesoUsado > 0);
+    _completed[i] = isCompleted;
+    _incomplete[i] = isIncomplete;
+
+    return Card(
+      color: Colors.black,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(e.nombre,
+                style: Theme.of(context)
+                    .textTheme
+                    .headlineSmall
+                    ?.copyWith(color: Colors.white)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.fitness_center,
+                    color: Theme.of(context).primaryColor, size: 22),
+                const SizedBox(width: 6),
+                Text(e.grupoMuscular, style: TextStyle(color: Colors.white)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.format_list_numbered,
+                    color: Theme.of(context).primaryColor, size: 22),
+                const SizedBox(width: 6),
+                Text('Series: ${e.series}',
+                    style: TextStyle(color: Colors.white)),
+                const SizedBox(width: 16),
+                Icon(Icons.repeat,
+                    color: Theme.of(context).primaryColor, size: 22),
+                const SizedBox(width: 6),
+                Text('Reps: ${e.repeticiones}',
+                    style: TextStyle(color: Colors.white)),
+                const SizedBox(width: 16),
+                if (e.peso != null && e.peso! > 0)
+                  Row(
+                    children: [
+                      Icon(Icons.fitness_center,
+                          color: Theme.of(context).primaryColor, size: 22),
+                      const SizedBox(width: 6),
+                      Text('Peso recomendado: ${e.peso!.toStringAsFixed(2)} kg',
+                          style: TextStyle(color: Colors.white)),
+                    ],
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.fitness_center,
+                    color: Theme.of(context).primaryColor, size: 22),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: TextField(
+                    controller: _doneCtrls[i],
+                    enabled: true,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: const InputDecoration(
+                      labelText: 'Rep. totales realizadas',
+                      isDense: true,
+                      contentPadding:
+                          EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                    ),
+                    onChanged: (_) {
+                      setState(() {});
+                      _savePartial();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Icono y campo solo si hay peso recomendado
+                e.peso != null && e.peso! > 0
+                    ? Icon(Icons.fitness_center,
+                        color: Theme.of(context).primaryColor, size: 22)
+                    : SizedBox.shrink(),
+                e.peso != null && e.peso! > 0
+                    ? const SizedBox(width: 6)
+                    : SizedBox.shrink(),
+                e.peso != null && e.peso! > 0
+                    ? Expanded(
+                        child: TextField(
+                          controller: _pesoCtrls[i],
+                          enabled: true,
+                          keyboardType:
+                              TextInputType.numberWithOptions(decimal: true),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'^\d*\.?\d*')),
+                          ],
+                          decoration: const InputDecoration(
+                            labelText: 'Peso usado (kg)',
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(
+                                vertical: 8, horizontal: 12),
+                          ),
+                          style: TextStyle(color: Colors.white),
+                          onChanged: (_) {
+                            setState(() {});
+                            _savePartial();
+                          },
+                        ),
+                      )
+                    : SizedBox.shrink(),
+
+                const SizedBox(width: 12),
+                Column(
+                  children: [
+                    const Text('Completado',
+                        style: TextStyle(color: Colors.white)),
+                    const SizedBox(height: 4),
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.white),
+                        color: isCompleted ? Colors.green : Colors.transparent,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: isCompleted
+                          ? const Icon(Icons.check,
+                              size: 20, color: Colors.black)
+                          : null,
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 8),
+                Column(
+                  children: [
+                    const Text('Incompleto',
+                        style: TextStyle(color: Colors.white)),
+                    const SizedBox(height: 4),
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.white),
+                        color: isIncomplete ? Colors.red : Colors.transparent,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: isIncomplete
+                          ? const Icon(Icons.close,
+                              size: 20, color: Colors.white)
+                          : null,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
