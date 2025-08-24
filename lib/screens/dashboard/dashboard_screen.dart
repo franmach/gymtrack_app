@@ -44,8 +44,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
     try {
       await ajusteService.ajustarRutinaMensual(usuario);
-    } catch (e) {
+    } catch (e,stack) {
       print('❌ Error en ajuste automático: $e');
+        print('STACKTRACE: $stack');
+
     }
   }
 

@@ -1,5 +1,5 @@
 import 'package:gymtrack_app/models/diaEntrenamiento.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 class Rutina {
   final String id;
   final String usuarioId;
@@ -34,4 +34,26 @@ class Rutina {
     'horas_por_sesion': horasPorSesion,
     'dias': dias.map((d) => d.toMap()).toList(),
   };
+
+  factory Rutina.fromMap(Map<String, dynamic> map) {
+  return Rutina(
+    id: map['id'] ?? '',
+    usuarioId: map['usuario_id'] ?? '',
+    fechaGeneracion: map['fecha_generacion'] is DateTime
+        ? map['fecha_generacion']
+        : map['fecha_generacion'] is Timestamp
+            ? (map['fecha_generacion'] as Timestamp).toDate()
+            : map['fecha_generacion'] is String
+                ? DateTime.tryParse(map['fecha_generacion']) ?? DateTime.now()
+                : DateTime.now(),
+    esActual: map['es_actual'] ?? false,
+    objetivo: map['objetivo'] ?? '',
+    dificultad: map['dificultad'] ?? '',
+    diasPorSemana: map['dias_por_semana'] ?? 0,
+    horasPorSesion: (map['horas_por_sesion'] ?? 0).toDouble(),
+    dias: (map['dias'] as List<dynamic>? ?? [])
+        .map((d) => DiaEntrenamiento.fromMap(d as Map<String, dynamic>))
+        .toList(),
+  );
+}
 }

@@ -57,8 +57,11 @@ class Usuario {
           ?.map((e) => e.toString())
           .toList(),
       rol: data['rol'] ?? 'alumno',
-      fechaRegistro:
-          DateTime.tryParse(data['fechaRegistro'] ?? '') ?? DateTime.now(),
+      fechaRegistro: data['fechaRegistro'] is Timestamp
+          ? (data['fechaRegistro'] as Timestamp).toDate()
+          : data['fechaRegistro'] is String
+              ? (DateTime.tryParse(data['fechaRegistro']) ?? DateTime.now())
+              : DateTime.now(),
       gimnasioId: data['gimnasioId'],
       ultimaAsistencia: data['ultimaAsistencia'] is Timestamp
           ? (data['ultimaAsistencia'] as Timestamp).toDate()

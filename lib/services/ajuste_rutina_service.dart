@@ -5,6 +5,7 @@ import 'package:gymtrack_app/models/usuario.dart';
 import 'package:gymtrack_app/services/ai_service.dart';
 import 'package:gymtrack_app/services/generar_rutina_service.dart';
 import 'package:gymtrack_app/utils/analisis_sesiones.dart';
+import 'package:gymtrack_app/models/rutina.dart';
 
 class AjusteRutinaService {
   final FirebaseFirestore firestore;
@@ -30,6 +31,23 @@ class AjusteRutinaService {
     }
   }
 
+  dynamic limpiarTimestamps(dynamic value) {
+    if (value is Timestamp) {
+      return value.toDate().toIso8601String();
+    } else if (value is Map) {
+      // Convierte cualquier tipo de mapa a Map<String, dynamic>
+      return Map<String, dynamic>.fromEntries(
+        value.entries.map(
+          (e) => MapEntry(e.key.toString(), limpiarTimestamps(e.value)),
+        ),
+      );
+    } else if (value is Iterable) {
+      return value.map(limpiarTimestamps).toList();
+    } else {
+      return value;
+    }
+  }
+
   Future<void> ajustarRutinaMensual(Usuario usuario) async {
     final now = DateTime.now();
 
@@ -47,12 +65,11 @@ class AjusteRutinaService {
 
     final rutinaActual = rutinaSnap.docs.first.data();
     final fechaGeneracion =
-    _parseFechaGeneracion(rutinaActual['fecha_generacion']);
+        _parseFechaGeneracion(rutinaActual['fecha_generacion']);
 
     final diasTranscurridos = now.difference(fechaGeneracion).inDays;
     print('→ Fecha de generación: $fechaGeneracion');
     print('→ Días transcurridos desde la última rutina: $diasTranscurridos');
-
 
     if (diasTranscurridos < 30) {
       print('⏳ No corresponde ajuste: pasaron solo $diasTranscurridos días.');
@@ -68,6 +85,10 @@ class AjusteRutinaService {
         .get();
 
     final sesiones = sesionesSnap.docs.map((d) => d.data()).toList();
+    for (var sesion in sesiones) {
+      print(
+          'DEBUG sesion[date]: ${sesion['date']} (${sesion['date'].runtimeType})');
+    }
     print('→ Se encontraron ${sesiones.length} sesiones');
 
     print('→ Generando resumen mensual...');
@@ -75,10 +96,14 @@ class AjusteRutinaService {
     print('→ Resumen generado: ${jsonEncode(resumenMensual)}');
 
     print('→ Enviando datos a Gemini...');
+    final perfilLimpio = limpiarTimestamps(usuario.toMap());
+
+    final rutinaActualLimpia = limpiarTimestamps(rutinaActual);
+    final resumenMensualLimpio = limpiarTimestamps(resumenMensual);
     final nuevaRutinaJson = await aiService.ajustarRutinaConHistorial(
-      perfil: usuario.toMap(),
-      rutinaActual: rutinaActual,
-      resumenMensual: resumenMensual,
+      perfil: perfilLimpio,
+      rutinaActual: rutinaActualLimpia,
+      resumenMensual: resumenMensualLimpio,
     );
 
     print('→ Rutina ajustada recibida de Gemini');
@@ -89,8 +114,6 @@ class AjusteRutinaService {
       objetivo: usuario.objetivo,
       rutinaJson: nuevaRutinaJson,
     );
-
-    
 
     print('✅ Rutina ajustada y guardada con éxito.');
   }

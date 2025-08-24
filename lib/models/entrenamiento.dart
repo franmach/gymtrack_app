@@ -23,7 +23,11 @@ class Entrenamiento {
         id: map['id'] as String,
         usuarioId: map['usuario_id'] as String,
         rutinaId: map['rutina_id'] as String,
-        fecha: (map['fecha'] as Timestamp).toDate(),
+        fecha: map['fecha'] is Timestamp
+            ? (map['fecha'] as Timestamp).toDate()
+            : map['fecha'] is String
+                ? DateTime.tryParse(map['fecha']) ?? DateTime.now()
+                : DateTime.now(),
         duracion: map['duracion'] as int,
         estado: map['estado'] as String,
         ejercicios: List<Map<String, dynamic>>.from(map['ejercicios'] as List),

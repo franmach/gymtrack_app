@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AnalisisSesiones {
   /// Resumen semanal
@@ -7,19 +8,36 @@ class AnalisisSesiones {
     final ahora = DateTime.now();
     final unaSemanaAtras = ahora.subtract(const Duration(days: 7));
     final sesionesSemana = sesiones.where((s) {
-      final fecha = (s['date'] as DateTime? ?? DateTime.now());
+      final rawFecha = s['date'];
+      DateTime? fecha;
+      if (rawFecha is Timestamp) {
+        fecha = rawFecha.toDate();
+      } else if (rawFecha is String) {
+        fecha = DateTime.tryParse(rawFecha);
+      } else if (rawFecha is DateTime) {
+        fecha = rawFecha;
+      }
+      fecha ??= DateTime.now();
       return fecha.isAfter(unaSemanaAtras) && fecha.isBefore(ahora);
     }).toList();
     return _generarResumen(sesionesSemana);
   }
 
-  /// Resumen mensual
   static Map<String, dynamic> generarResumenMensual(
       List<Map<String, dynamic>> sesiones) {
     final ahora = DateTime.now();
     final unMesAtras = ahora.subtract(const Duration(days: 30));
     final sesionesMes = sesiones.where((s) {
-      final fecha = (s['date'] as DateTime? ?? DateTime.now());
+      final rawFecha = s['date'];
+      DateTime? fecha;
+      if (rawFecha is Timestamp) {
+        fecha = rawFecha.toDate();
+      } else if (rawFecha is String) {
+        fecha = DateTime.tryParse(rawFecha);
+      } else if (rawFecha is DateTime) {
+        fecha = rawFecha;
+      }
+      fecha ??= DateTime.now();
       return fecha.isAfter(unMesAtras) && fecha.isBefore(ahora);
     }).toList();
     return _generarResumen(sesionesMes);
@@ -51,7 +69,15 @@ class AnalisisSesiones {
       final String dia = sesion['day'] ?? 'Día desconocido';
       final List ejercicios = sesion['exercises'] ?? [];
       final String comentario = sesion['comentario_general'] ?? '';
-      final fechaSesion = sesion['date'] as DateTime?;
+      final rawFechaSesion = sesion['date'];
+      DateTime? fechaSesion;
+      if (rawFechaSesion is Timestamp) {
+        fechaSesion = rawFechaSesion.toDate();
+      } else if (rawFechaSesion is String) {
+        fechaSesion = DateTime.tryParse(rawFechaSesion);
+      } else if (rawFechaSesion is DateTime) {
+        fechaSesion = rawFechaSesion;
+      }
       if (fechaSesion != null) fechasEntrenadas.add(fechaSesion);
       totalDias++;
 

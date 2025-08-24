@@ -33,7 +33,13 @@ class Logro {
       puntosOtorgados: data['puntosOtorgados'] ?? 0,
       tipo: data['tipo'] ?? '',
       periodo: data['periodo'],
-      otorgadoEn: (data['otorgadoEn'] as Timestamp).toDate(),
+      otorgadoEn: data['otorgadoEn'] is Timestamp
+          ? (data['otorgadoEn'] as Timestamp).toDate()
+          : data['otorgadoEn'] is String
+              ? DateTime.tryParse(data['otorgadoEn']) ?? DateTime.now()
+              : data['otorgadoEn'] is DateTime
+                  ? data['otorgadoEn']
+                  : DateTime.now(),
       badge: data['badge'],
     );
   }

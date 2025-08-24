@@ -16,7 +16,11 @@ class Asistencia {
   factory Asistencia.fromMap(Map<String, dynamic> map) => Asistencia(
         id: map['id'] as String,
         usuarioId: map['usuario_id'] as String,
-        fecha: (map['fecha'] as Timestamp).toDate(),
+        fecha: map['fecha'] is Timestamp
+            ? (map['fecha'] as Timestamp).toDate()
+            : map['fecha'] is String
+                ? DateTime.tryParse(map['fecha']) ?? DateTime.now()
+                : DateTime.now(),
         hora: map['hora'] as String,
       );
 
