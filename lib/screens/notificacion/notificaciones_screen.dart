@@ -1,137 +1,202 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '/models/notificacion.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/timezone.dart' as tz;
-
-// Plugin de notificaciones (usa el inicializado en main.dart)
-final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-    FlutterLocalNotificationsPlugin();
+import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:gymtrack_app/services/local_notification_store.dart';
+import 'dart:math';
 
 class ConfigNotificacionesScreen extends StatefulWidget {
   final String usuarioId;
-
   const ConfigNotificacionesScreen({super.key, required this.usuarioId});
 
   @override
-  _ConfigNotificacionesScreenState createState() =>
+  State<ConfigNotificacionesScreen> createState() =>
       _ConfigNotificacionesScreenState();
 }
 
 class _ConfigNotificacionesScreenState
     extends State<ConfigNotificacionesScreen> {
   final _formKey = GlobalKey<FormState>();
-
   String _tipo = 'entrenamiento';
   String _mensaje = '';
   DateTime? _fechaSeleccionada;
   TimeOfDay? _horaSeleccionada;
+  Set<int> _diasSeleccionados = {};
+  List<Map<String, dynamic>> _notificaciones = [];
 
-  // --- Selección de fecha ---
-  Future<void> _seleccionarFecha() async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2100),
-    );
-    if (picked != null) {
-      setState(() {
-        _fechaSeleccionada = picked;
-      });
+  bool _motivacionalesActivadas = false; // CAMBIO
+  final _store = LocalNotificationStore(); // CAMBIO
+
+  final List<Map<String, dynamic>> _diasSemana = [
+    {'id': 1, 'label': 'L'},
+    {'id': 2, 'label': 'M'},
+    {'id': 3, 'label': 'M'},
+    {'id': 4, 'label': 'J'},
+    {'id': 5, 'label': 'V'},
+    {'id': 6, 'label': 'S'},
+    {'id': 7, 'label': 'D'},
+  ];
+
+  final List<String> _frasesMotivacionales = [
+    "¡No te rindas, cada día cuenta!",
+    "Hoy es un gran día para entrenar.",
+    "Tu esfuerzo de hoy es tu logro de mañana.",
+    "¡Un paso más hacia tu meta!",
+    "Entrena con constancia, los resultados llegan.",
+    "La disciplina vence a la motivación.",
+    "¡Hora de moverse, tu cuerpo lo agradecerá!",
+    "Tu mejor inversión es en vos mismo.",
+    "Cuidá tu cuerpo, es el único lugar que tenés para vivir.",
+    "¡Vamos, que podés con esto y más!"
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarNotificaciones();
+    _motivacionalesActivadas = _store.areMotivationalEnabled(); // CAMBIO
+    if (_motivacionalesActivadas) {
+      _programarMotivacionales();
     }
   }
 
-  // --- Selección de hora ---
-  Future<void> _seleccionarHora() async {
-    final TimeOfDay? picked =
-        await showTimePicker(context: context, initialTime: TimeOfDay.now());
-    if (picked != null) {
-      setState(() {
-        _horaSeleccionada = picked;
-      });
-    }
+  void _cargarNotificaciones() {
+    setState(() {
+      _notificaciones = _store
+          .listReminders()
+          .where((n) => n['usuarioId'] == widget.usuarioId)
+          .toList();
+    });
   }
 
-  // --- Guardar en Firestore y programar notificación local ---
   Future<void> _guardarNotificacion() async {
-    if (_formKey.currentState!.validate() &&
-        _fechaSeleccionada != null &&
-        _horaSeleccionada != null) {
-      final DateTime fechaHora = DateTime(
-        _fechaSeleccionada!.year,
-        _fechaSeleccionada!.month,
-        _fechaSeleccionada!.day,
-        _horaSeleccionada!.hour,
-        _horaSeleccionada!.minute,
-      );
+    if (_formKey.currentState!.validate() && _horaSeleccionada != null) {
+      final id = DateTime.now().millisecondsSinceEpoch.toString();
 
-      final id =
-          FirebaseFirestore.instance.collection('notificaciones').doc().id;
+      if (_diasSeleccionados.isEmpty) {
+        if (_fechaSeleccionada == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Seleccione una fecha si no repite')),
+          );
+          return;
+        }
 
-      final noti = Notificacion(
-        id: id,
-        usuarioId: widget.usuarioId,
-        tipo: _tipo,
-        mensaje: _mensaje,
-        programadaPara: fechaHora,
-      );
+        final fechaHora = DateTime(
+          _fechaSeleccionada!.year,
+          _fechaSeleccionada!.month,
+          _fechaSeleccionada!.day,
+          _horaSeleccionada!.hour,
+          _horaSeleccionada!.minute,
+        );
 
-      // Guardar en Firestore
-      await FirebaseFirestore.instance
-          .collection('notificaciones')
-          .doc(id)
-          .set(noti.toMap());
+        final noti = {
+          'id': id,
+          'usuarioId': widget.usuarioId,
+          'tipo': _tipo,
+          'mensaje': _mensaje,
+          'programadaPara': fechaHora.toIso8601String(),
+          'hora': _horaSeleccionada!.format(context),
+          'diasSemana': <int>[],
+        };
 
-      // Programar notificación local
-      await _programarNotificacionLocal(noti);
+        await _store.upsertReminder(noti);
+
+        await AwesomeNotifications().createNotification(
+          content: NotificationContent(
+            id: id.hashCode,
+            channelKey: 'gymtrack_channel',
+            title: _tipo.toUpperCase(),
+            body: _mensaje,
+          ),
+          schedule: NotificationCalendar.fromDate(date: fechaHora),
+        );
+      } else {
+        final noti = {
+          'id': id,
+          'usuarioId': widget.usuarioId,
+          'tipo': _tipo,
+          'mensaje': _mensaje,
+          'hora': _horaSeleccionada!.format(context),
+          'diasSemana': _diasSeleccionados.toList(),
+        };
+
+        await _store.upsertReminder(noti);
+
+        for (final dia in _diasSeleccionados) {
+          await AwesomeNotifications().createNotification(
+            content: NotificationContent(
+              id: id.hashCode + dia,
+              channelKey: 'gymtrack_channel',
+              title: _tipo.toUpperCase(),
+              body: _mensaje,
+            ),
+            schedule: NotificationCalendar(
+              weekday: dia,
+              hour: _horaSeleccionada!.hour,
+              minute: _horaSeleccionada!.minute,
+              second: 0,
+              repeats: true,
+            ),
+          );
+        }
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Notificación guardada y programada')),
+        const SnackBar(content: Text('Notificación guardada')),
       );
 
       _formKey.currentState!.reset();
       setState(() {
         _fechaSeleccionada = null;
         _horaSeleccionada = null;
+        _diasSeleccionados.clear();
+        _mensaje = '';
       });
+      _cargarNotificaciones();
     }
   }
 
-  // --- Programación local ---
-  Future<void> _programarNotificacionLocal(Notificacion noti) async {
-    await flutterLocalNotificationsPlugin.zonedSchedule(
-      noti.hashCode,
-      noti.tipo.toUpperCase(),
-      noti.mensaje,
-      tz.TZDateTime.from(noti.programadaPara, tz.local),
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'canal_notificaciones',
-          'Notificaciones GymTrack',
-          channelDescription: 'Recordatorios y mensajes motivacionales',
-          importance: Importance.high,
-          priority: Priority.high,
-        ),
-      ),
-      androidAllowWhileIdle: true,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.dateAndTime,
-    );
+  Future<void> _eliminarNotificacion(Map<String, dynamic> noti) async {
+    await _store.deleteReminder(noti['id']);
+    await AwesomeNotifications().cancel(noti['id'].hashCode);
+    _cargarNotificaciones();
   }
 
-  // --- Eliminar notificación ---
-  Future<void> _eliminarNotificacion(String id) async {
-    await FirebaseFirestore.instance
-        .collection('notificaciones')
-        .doc(id)
-        .delete();
+  Future<void> _programarMotivacionales() async {
+    final horas = [9, 15, 19];
+    for (final h in horas) {
+      final frase =
+          _frasesMotivacionales[Random().nextInt(_frasesMotivacionales.length)];
+      await AwesomeNotifications().createNotification(
+        content: NotificationContent(
+          id: 10000 + h,
+          channelKey: 'gymtrack_channel',
+          title: 'GymTrack',
+          body: frase,
+        ),
+        schedule: NotificationCalendar(
+          hour: h,
+          minute: 0,
+          second: 0,
+          repeats: true,
+        ),
+      );
+    }
+  }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Notificación eliminada')),
-    );
+  Future<void> _cancelarMotivacionales() async {
+    for (final h in [9, 15, 19]) {
+      await AwesomeNotifications().cancel(10000 + h);
+    }
+  }
+
+  void _toggleMotivacionales(bool value) async {
+    setState(() => _motivacionalesActivadas = value);
+    await _store.setMotivationalEnabled(value); // CAMBIO
+    if (value) {
+      _programarMotivacionales();
+    } else {
+      _cancelarMotivacionales();
+    }
   }
 
   @override
@@ -142,7 +207,17 @@ class _ConfigNotificacionesScreenState
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // --- Formulario ---
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Recibir frases motivacionales diarias'),
+                Switch(
+                  value: _motivacionalesActivadas,
+                  onChanged: _toggleMotivacionales,
+                ),
+              ],
+            ),
+            const Divider(),
             Form(
               key: _formKey,
               child: Column(
@@ -155,6 +230,7 @@ class _ConfigNotificacionesScreenState
                           value: 'entrenamiento', child: Text('Entrenamiento')),
                       DropdownMenuItem(
                           value: 'alimentacion', child: Text('Alimentación')),
+                      DropdownMenuItem(value: 'pago', child: Text('Pago')),
                       DropdownMenuItem(
                           value: 'motivacional', child: Text('Motivacional')),
                     ],
@@ -162,24 +238,9 @@ class _ConfigNotificacionesScreenState
                   ),
                   TextFormField(
                     decoration: const InputDecoration(labelText: 'Mensaje'),
-                    validator: (value) => value == null || value.isEmpty
-                        ? 'Ingrese un mensaje'
-                        : null,
-                    onChanged: (value) => _mensaje = value,
-                  ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(_fechaSeleccionada == null
-                            ? 'Sin fecha seleccionada'
-                            : DateFormat('dd/MM/yyyy')
-                                .format(_fechaSeleccionada!)),
-                      ),
-                      TextButton(
-                        onPressed: _seleccionarFecha,
-                        child: const Text('Seleccionar Fecha'),
-                      ),
-                    ],
+                    validator: (v) =>
+                        v == null || v.isEmpty ? 'Ingrese un mensaje' : null,
+                    onChanged: (v) => _mensaje = v,
                   ),
                   Row(
                     children: [
@@ -189,11 +250,81 @@ class _ConfigNotificacionesScreenState
                             : _horaSeleccionada!.format(context)),
                       ),
                       TextButton(
-                        onPressed: _seleccionarHora,
+                        onPressed: () async {
+                          final picked = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.now(),
+                          );
+                          if (picked != null) {
+                            setState(() => _horaSeleccionada = picked);
+                          }
+                        },
                         child: const Text('Seleccionar Hora'),
                       ),
                     ],
                   ),
+                  if (_diasSeleccionados.isEmpty)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(_fechaSeleccionada == null
+                              ? 'Sin fecha seleccionada'
+                              : DateFormat('dd/MM/yyyy')
+                                  .format(_fechaSeleccionada!)),
+                        ),
+                        TextButton(
+                          onPressed: () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: DateTime.now(),
+                              firstDate: DateTime.now(),
+                              lastDate: DateTime(2100),
+                            );
+                            if (picked != null) {
+                              setState(() => _fechaSeleccionada = picked);
+                            }
+                          },
+                          child: const Text('Seleccionar Fecha'),
+                        ),
+                      ],
+                    ),
+                  Wrap(
+                    spacing: 8,
+                    children: _diasSemana.map((dia) {
+                      final seleccionado =
+                          _diasSeleccionados.contains(dia['id']);
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            if (seleccionado) {
+                              _diasSeleccionados.remove(dia['id']);
+                            } else {
+                              _diasSeleccionados.add(dia['id']);
+                            }
+                          });
+                        },
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: seleccionado
+                                ? Theme.of(context).colorScheme.primary
+                                : Colors.grey[300],
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            dia['label'],
+                            style: TextStyle(
+                              color: seleccionado ? Colors.white : Colors.black,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 12),
                   ElevatedButton(
                     onPressed: _guardarNotificacion,
                     child: const Text('Guardar Notificación'),
@@ -201,48 +332,31 @@ class _ConfigNotificacionesScreenState
                 ],
               ),
             ),
-            const SizedBox(height: 20),
             const Divider(),
-            const Text(
-              'Notificaciones guardadas',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            // --- Listado desde Firestore ---
             Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('notificaciones')
-                    .where('usuarioId', isEqualTo: widget.usuarioId)
-                    .orderBy('programada_para')
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  final docs = snapshot.data!.docs;
-                  if (docs.isEmpty) {
-                    return const Center(
-                        child: Text('No hay notificaciones configuradas'));
-                  }
-                  return ListView.builder(
-                    itemCount: docs.length,
-                    itemBuilder: (context, index) {
-                      final noti = Notificacion.fromMap(
-                          docs[index].data() as Map<String, dynamic>);
-                      return ListTile(
-                        title: Text(noti.mensaje),
-                        subtitle: Text(
-                            '${noti.tipo} - ${DateFormat('dd/MM/yyyy HH:mm').format(noti.programadaPara)}'),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _eliminarNotificacion(noti.id),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
+              child: _notificaciones.isEmpty
+                  ? const Center(
+                      child: Text('No hay notificaciones configuradas'))
+                  : ListView.builder(
+                      itemCount: _notificaciones.length,
+                      itemBuilder: (context, index) {
+                        final noti = _notificaciones[index];
+                        final dias = (noti['diasSemana'] ?? []) as List;
+
+                        return ListTile(
+                          title: Text(noti['mensaje']),
+                          subtitle: dias.isEmpty
+                              ? Text(
+                                  'Única - ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.parse(noti['programadaPara']))}')
+                              : Text(
+                                  'Recurrente - ${noti['hora']} - Días: ${dias.join(", ")}'),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () => _eliminarNotificacion(noti),
+                          ),
+                        );
+                      },
+                    ),
             ),
           ],
         ),

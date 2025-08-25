@@ -1,5 +1,3 @@
-// lib/screens/auth/login_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:gymtrack_app/screens/dashboard/dashboard_screen.dart';
@@ -96,7 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Image.asset(
-              '/images/2.png', // ruta del ícono
+              'assets/images/2.png', // ruta del ícono
               height: 50,
             ),
             const SizedBox(width: 20), // espacio entre ícono y texto

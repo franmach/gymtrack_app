@@ -110,9 +110,8 @@ class DashboardScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) =>  HistorialScreen(),
+                        builder: (_) => HistorialScreen(),
                       ),
-                      
                     );
                   },
                   child: const Text('Historial'),
@@ -194,6 +193,7 @@ class DashboardScreen extends StatelessWidget {
                   label: const Text('Notificaciones'),
                 ),
                 const SizedBox(height: 12),
+                
                 ElevatedButton.icon(
                   icon: const Icon(Icons.fitness_center),
                   label: const Text('Gimnasio'),

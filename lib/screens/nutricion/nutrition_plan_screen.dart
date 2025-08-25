@@ -56,7 +56,7 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
   /// Cargar los datos del perfil de Firestore
   Future<void> _loadUserProfile() async {
     final uid = _auth.currentUser!.uid;
-    final doc = await _firestore.collection('users').doc(uid).get();
+    final doc = await _firestore.collection('usuarios').doc(uid).get();
     if (doc.exists) {
       setState(() {
         userProfile = doc.data()!;
@@ -85,8 +85,7 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
         excludedFoods = List.from(plan.excludedFoods);
         weeklyPlan = {
           for (var item in plan.weeklyPlan)
-            item.day:
-                plan.weeklyPlan.where((e) => e.day == item.day).toList()
+            item.day: plan.weeklyPlan.where((e) => e.day == item.day).toList()
         };
       });
     }
@@ -221,8 +220,8 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
                       children: excludedFoods
                           .map((e) => Chip(
                                 label: Text(e),
-                                onDeleted: () => setState(
-                                    () => excludedFoods.remove(e)),
+                                onDeleted: () =>
+                                    setState(() => excludedFoods.remove(e)),
                               ))
                           .toList(),
                     ),
@@ -252,22 +251,19 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
                             Text(
                               entry.key,
                               style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600),
+                                  fontSize: 16, fontWeight: FontWeight.w600),
                             ),
                             ...entry.value.map((item) => ListTile(
-                                title: Text(item.comida.nombre),
-                                subtitle: Text(
-                                  '${item.comida.macros.proteinGrams}g proteína • '
-                                  '${item.comida.macros.calories.toStringAsFixed(0)} kcal • '
-                                  '${item.portion} porción'
-                                  '${item.tipo.isNotEmpty ? ' • ${item.tipo}' : ''}'
-                                ),
-                              )),
+                                  title: Text(item.comida.nombre),
+                                  subtitle: Text(
+                                      '${item.comida.macros.proteinGrams}g proteína • '
+                                      '${item.comida.macros.calories.toStringAsFixed(0)} kcal • '
+                                      '${item.portion} porción'
+                                      '${item.tipo.isNotEmpty ? ' • ${item.tipo}' : ''}'),
+                                )),
                           ],
                         );
                       }).toList(),
-
                       const SizedBox(height: 24),
                       Center(
                         child: ElevatedButton(
