@@ -3,10 +3,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:gymtrack_app/screens/historial/historial_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gymtrack_app/main.dart';
+import 'package:gymtrack_app/screens/notificacion/notificaciones_screen.dart';
 import 'package:gymtrack_app/services/firestore_routine_service.dart';
 import 'package:gymtrack_app/screens/session/day_selection_screen.dart';
 import 'package:gymtrack_app/screens/session/timer_screen.dart';
 import 'package:gymtrack_app/screens/admin/gimnasio_screen.dart';
+import 'package:gymtrack_app/screens/progreso/registroProgreso_screen.dart';
+import 'package:gymtrack_app/screens/progreso/visualizarProgreso_screen.dart';
 import 'package:gymtrack_app/models/usuario.dart';
 import 'package:gymtrack_app/services/ajuste_rutina_service.dart';
 import 'package:gymtrack_app/services/ai_service.dart';
@@ -32,14 +35,6 @@ class DashboardScreen extends StatelessWidget {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const CircularProgressIndicator();
             }
-            /*
-            if (!snapshot.hasData || !snapshot.data!.exists) {
-              return const Text(
-                'Aún no tienes una rutina generada.',
-                textAlign: TextAlign.center,
-              );
-            }
-*/
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -115,9 +110,8 @@ class DashboardScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) =>  HistorialScreen(),
+                        builder: (_) => HistorialScreen(),
                       ),
-                      
                     );
                   },
                   child: const Text('Historial'),
@@ -153,10 +147,53 @@ class DashboardScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
+                // Botón para acceder al registro de progreso
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const ProgresoScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.timeline),
+                  label: const Text('Registro de progreso'),
+                ),
+                const SizedBox(height: 12),
+
+                // Botón para visualizar al progreso
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const VisualizarProgresoScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.timeline),
+                  label: const Text('Ver progreso'),
+                ),
+                const SizedBox(height: 12),
+
                 ElevatedButton(
                   onPressed: () => Navigator.pushNamed(context, '/profile'),
                   child: const Text('Perfil'),
                 ),
+                // Botón para acceder a notificaciones personalizadas
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            ConfigNotificacionesScreen(usuarioId: uid),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.notifications),
+                  label: const Text('Notificaciones'),
+                ),
+                const SizedBox(height: 12),
+                
                 ElevatedButton.icon(
                   icon: const Icon(Icons.fitness_center),
                   label: const Text('Gimnasio'),

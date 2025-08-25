@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:vibration/vibration.dart';
-import 'package:audioplayers/audioplayers.dart';
+//import 'package:vibration/vibration.dart';
+//import 'package:audioplayers/audioplayers.dart';
 
 /// Modo de temporizador
 enum TimerMode { rest, hiit, tabata }
@@ -34,12 +34,12 @@ class _TimerScreenState extends State<TimerScreen> {
   bool _isRunning = false;
   String _phase = 'Work';
 
-  final AudioPlayer _audio = AudioPlayer();
+  //final AudioPlayer _audio = AudioPlayer();
 
   @override
   void dispose() {
     _timer?.cancel();
-    _audio.dispose();
+    //_audio.dispose();
     _workCtrl.dispose();
     _restCtrl.dispose();
     _roundsCtrl.dispose();
@@ -76,7 +76,7 @@ class _TimerScreenState extends State<TimerScreen> {
                 : _time.inSeconds >= _restSec);
 
         if (phaseComplete) {
-          _playAlert();
+         // _playAlert();
           if (_phase == 'Work') {
             _phase = 'Rest';
             _setTime();
@@ -88,7 +88,8 @@ class _TimerScreenState extends State<TimerScreen> {
             } else {
               _stopTimer();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Temporizador completado 🎉')),);
+                const SnackBar(content: Text('Temporizador completado 🎉')),
+              );
             }
           }
         }
@@ -104,14 +105,14 @@ class _TimerScreenState extends State<TimerScreen> {
     }
   }
 
-  Future<void> _playAlert() async {
-    if (_soundOn) {
-      await _audio.play(AssetSource('sounds/beep.mp3'));
-    }
-    if (_vibrationOn && (await Vibration.hasVibrator() ?? false)) {
-      Vibration.vibrate(duration: 500);
-    }
-  }
+  //Future<void> _playAlert() async {
+    //if (_soundOn) {
+     // await _audio.play(AssetSource('sounds/beep.mp3'));
+    //}
+    //if (_vibrationOn && (await Vibration.hasVibrator() ?? false)) {
+    // Vibration.vibrate(duration: 500);
+    // }
+  //}
 
   void _stopTimer() {
     _timer?.cancel();
@@ -133,7 +134,8 @@ class _TimerScreenState extends State<TimerScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Modo', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text('Modo',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -151,26 +153,30 @@ class _TimerScreenState extends State<TimerScreen> {
             ),
             const SizedBox(height: 16),
             if (_mode != null) ...[
-              const Text('Configuración', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text('Configuración',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               TextField(
                 controller: _workCtrl,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Duración actividad (s)'),
+                decoration:
+                    const InputDecoration(labelText: 'Duración actividad (s)'),
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: _restCtrl,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Duración descanso (s)'),
+                decoration:
+                    const InputDecoration(labelText: 'Duración descanso (s)'),
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: _roundsCtrl,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Número de rondas'),
+                decoration:
+                    const InputDecoration(labelText: 'Número de rondas'),
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               ),
               const SizedBox(height: 16),
@@ -194,13 +200,15 @@ class _TimerScreenState extends State<TimerScreen> {
               Text(
                 _formattedTime(),
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 64, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 64, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text(
                 _phase == 'Work' ? 'Comienza el ejercicio' : 'Descanso',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+                style:
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 16),
               if (!_isRunning)

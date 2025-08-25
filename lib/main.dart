@@ -1,42 +1,70 @@
 import 'package:flutter/material.dart';
-import 'gymtrack_theme.dart'; 
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
+import 'package:awesome_notifications/awesome_notifications.dart';
+
+import 'gymtrack_theme.dart';
 import 'package:gymtrack_app/services/ai_service.dart';
 import 'package:gymtrack_app/services/nutrition_ai_service.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/perfil/perfil_screen.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-
-void main() async {
+// ------------------ MAIN ------------------
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await dotenv.load(fileName: ".env");
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  tz.initializeTimeZones();
+  tz.setLocalLocation(tz.getLocation('America/Montevideo'));
+
+  await Hive.initFlutter();
+  await Hive.openBox('gt_reminders');
+  await Hive.openBox('gt_prefs');
+
+  AwesomeNotifications().initialize(
+    null,
+    [
+      NotificationChannel(
+        channelKey: 'gymtrack_channel',
+        channelName: 'Notificaciones GymTrack',
+        channelDescription:
+            'Canal de notificaciones personalizadas de GymTrack',
+        defaultColor: Colors.blue,
+        ledColor: Colors.white,
+        importance: NotificationImportance.Max,
+      )
+    ],
+    debug: true,
+  );
+
+  bool isAllowed = await AwesomeNotifications().isNotificationAllowed();
+  if (!isAllowed) {
+    await AwesomeNotifications().requestPermissionToSendNotifications();
+  }
+
   runApp(
     MultiProvider(
       providers: [
-        // Servicio genérico de AI usando Gemini 1.5 Flash
-        Provider<AiService>(
-          create: (_) => AiService(),
-        ),
-        // Servicio de nutrición que reusa AiService
-        Provider<NutritionAIService>(
-          create: (ctx) => NutritionAIService(),
-        ),
+        Provider<AiService>(create: (_) => AiService()),
+        Provider<NutritionAIService>(create: (ctx) => NutritionAIService()),
       ],
       child: const GymTrackApp(),
     ),
   );
 }
 
+// ------------------ APP ------------------
 class GymTrackApp extends StatelessWidget {
   const GymTrackApp({super.key});
 
@@ -49,7 +77,6 @@ class GymTrackApp extends StatelessWidget {
       home: const HomeScreen(),
       routes: {
         '/profile': (context) => const PerfilScreen(),
-        // Agrega aquí más rutas si las necesitas
       },
     );
   }
@@ -68,36 +95,29 @@ class HomeScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Logo
-              Image.asset(
-                '/images/logo.png',
-                width: 300,
-                height: 300,
-              ),
-
-              // Botón de registro
+              Image.asset('assets/images/logo.png', width: 300, height: 300),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                      MaterialPageRoute(
+                          builder: (context) => const RegisterScreen()),
                     );
                   },
                   child: const Text('Registrarse'),
                 ),
               ),
               const SizedBox(height: 16),
-
-              // Botón de login
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                      MaterialPageRoute(
+                          builder: (context) => const LoginScreen()),
                     );
                   },
                   child: const Text('Iniciar Sesión'),
@@ -109,6 +129,4 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
-
 }
-
