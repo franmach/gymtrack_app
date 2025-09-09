@@ -14,6 +14,7 @@ import 'package:gymtrack_app/services/nutrition_ai_service.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/perfil/perfil_screen.dart';
+import 'package:gymtrack_app/services/offline_service.dart';
 
 // ------------------ MAIN ------------------
 Future<void> main() async {
@@ -31,6 +32,9 @@ Future<void> main() async {
   await Hive.initFlutter();
   await Hive.openBox('gt_reminders');
   await Hive.openBox('gt_prefs');
+
+  // 🔹 Inicializamos el servicio offline (box para rutinas)
+  await OfflineService.init();
 
   AwesomeNotifications().initialize(
     null,
