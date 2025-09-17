@@ -13,4 +13,13 @@ class DiaEntrenamiento {
     'nombre': nombre,
     'ejercicios': ejercicios.map((e) => e.toMap()).toList(),
   };
+
+  factory DiaEntrenamiento.fromMap(Map<String, dynamic> map) {
+  return DiaEntrenamiento(
+    nombre: map['nombre'] ?? '',
+    ejercicios: (map['ejercicios'] as List<dynamic>? ?? [])
+        .map((e) => EjercicioAsignado.fromMap(e as Map<String, dynamic>))
+        .toList(),
+  );  
+  }
 }

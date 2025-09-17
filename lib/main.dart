@@ -1,4 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:gymtrack_app/screens/main_tabbed_screen.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -74,14 +76,40 @@ class GymTrackApp extends StatelessWidget {
       title: 'GymTrack',
       debugShowCheckedModeBanner: false,
       theme: gymTrackTheme,
-      home: const HomeScreen(),
+      home: const AuthGate(),
       routes: {
         '/profile': (context) => const PerfilScreen(),
       },
     );
   }
 }
+// Widget que muestra login si no hay usuario autenticado
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
 
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final user = snapshot.data;
+        if (user == null) {
+          // No hay usuario: abrir pantalla de login
+          return const LoginScreen();
+        }
+
+        // Usuario logueado: mostrar la interfaz principal
+        return const MainTabbedScreen();
+      },
+    );
+  }
+}
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
