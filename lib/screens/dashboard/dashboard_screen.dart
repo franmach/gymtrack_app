@@ -6,6 +6,7 @@ import 'package:gymtrack_app/screens/historial/historial_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gymtrack_app/main.dart';
 import 'package:gymtrack_app/screens/notificacion/notificaciones_screen.dart';
+import 'package:gymtrack_app/screens/perfil/perfil_screen.dart';
 import 'package:gymtrack_app/services/firestore_routine_service.dart';
 import 'package:gymtrack_app/screens/session/day_selection_screen.dart';
 import 'package:gymtrack_app/screens/session/timer_screen.dart';
@@ -61,12 +62,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _onMenuSelect(String value) {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
     if (value == 'profile') {
-      Navigator.pushNamed(context, '/profile');
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const PerfilScreen()));
     } else if (value == 'notifications') {
-      Navigator.pushNamed(context, '/notifications');
+      if (uid == null) return;
+      Navigator.push(context, MaterialPageRoute(builder: (_) => ConfigNotificacionesScreen(usuarioId: uid)));
     } else if (value == 'settings') {
-      Navigator.pushNamed(context, '/settings');
+      //Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
     }
   }
 

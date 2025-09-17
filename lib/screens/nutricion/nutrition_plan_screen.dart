@@ -57,7 +57,6 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
   Future<void> _loadUserProfile() async {
     final uid = _auth.currentUser!.uid;
     final doc = await _firestore.collection('usuarios').doc(uid).get();
-    final doc = await _firestore.collection('usuarios').doc(uid).get();
     if (doc.exists) {
       setState(() {
         userProfile = doc.data()!;
@@ -86,7 +85,6 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
         excludedFoods = List.from(plan.excludedFoods);
         weeklyPlan = {
           for (var item in plan.weeklyPlan)
-            item.day: plan.weeklyPlan.where((e) => e.day == item.day).toList()
             item.day: plan.weeklyPlan.where((e) => e.day == item.day).toList()
         };
       });
@@ -159,7 +157,10 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
       if (comida == null) return '';
       // Si es Map
       if (comida is Map) {
-        return (comida['descripcion'] ?? comida['description'] ?? comida['detalle'] ?? '') as String;
+        return (comida['descripcion'] ??
+            comida['description'] ??
+            comida['detalle'] ??
+            '') as String;
       }
       // Intentar propiedades comunes en distintos modelos
       final dynamic d = (comida as dynamic).descripcion ??
@@ -242,8 +243,6 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
                                 label: Text(e),
                                 onDeleted: () =>
                                     setState(() => excludedFoods.remove(e)),
-                                onDeleted: () =>
-                                    setState(() => excludedFoods.remove(e)),
                               ))
                           .toList(),
                     ),
@@ -296,25 +295,27 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
                                           borderRadius:
                                               BorderRadius.circular(8)),
                                       child: InkWell(
-                                        borderRadius:
-                                            BorderRadius.circular(8),
+                                        borderRadius: BorderRadius.circular(8),
                                         onTap: () {
                                           // Mostrar detalle al tocar (bottom sheet)
                                           showModalBottomSheet(
                                             context: context,
                                             backgroundColor: Colors.grey[900],
                                             shape: const RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.vertical(
-                                                  top: Radius.circular(16)),
+                                              borderRadius:
+                                                  BorderRadius.vertical(
+                                                      top: Radius.circular(16)),
                                             ),
                                             builder: (ctx) {
                                               final detalle =
-                                                  _getComidaDescripcion(item.comida);
+                                                  _getComidaDescripcion(
+                                                      item.comida);
                                               return Padding(
                                                 padding:
                                                     const EdgeInsets.all(16.0),
                                                 child: Column(
-                                                  mainAxisSize: MainAxisSize.min,
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
                                                   crossAxisAlignment:
                                                       CrossAxisAlignment.start,
                                                   children: [
@@ -322,7 +323,8 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
                                                       item.comida.nombre,
                                                       style: const TextStyle(
                                                         fontSize: 18,
-                                                        fontWeight: FontWeight.bold,
+                                                        fontWeight:
+                                                            FontWeight.bold,
                                                         color: Colors.white,
                                                       ),
                                                     ),
@@ -330,14 +332,20 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
                                                     Row(
                                                       children: [
                                                         Icon(
-                                                          _getTipoIcon(item.tipo),
-                                                          color: Theme.of(context).primaryColor,
+                                                          _getTipoIcon(
+                                                              item.tipo),
+                                                          color:
+                                                              Theme.of(context)
+                                                                  .primaryColor,
                                                         ),
-                                                        const SizedBox(width: 8),
+                                                        const SizedBox(
+                                                            width: 8),
                                                         Text(
                                                           item.tipo,
-                                                          style: const TextStyle(
-                                                              color: Colors.white70),
+                                                          style:
+                                                              const TextStyle(
+                                                                  color: Colors
+                                                                      .white70),
                                                         ),
                                                       ],
                                                     ),
@@ -345,7 +353,8 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
                                                     Text(
                                                       '${item.comida.macros.proteinGrams}g proteína • ${item.comida.macros.calories.toStringAsFixed(0)} kcal • ${item.portion} porción',
                                                       style: const TextStyle(
-                                                          color: Colors.white70),
+                                                          color:
+                                                              Colors.white70),
                                                     ),
                                                     const SizedBox(height: 12),
                                                     // Mostrar detalle solo si existe (usando helper dinámico)
@@ -353,15 +362,19 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
                                                       Text(
                                                         detalle,
                                                         style: const TextStyle(
-                                                            color: Colors.white70),
+                                                            color:
+                                                                Colors.white70),
                                                       ),
                                                     const SizedBox(height: 8),
                                                     Align(
-                                                      alignment: Alignment.centerRight,
+                                                      alignment:
+                                                          Alignment.centerRight,
                                                       child: TextButton(
                                                         onPressed: () =>
-                                                            Navigator.of(ctx).pop(),
-                                                        child: const Text('Cerrar'),
+                                                            Navigator.of(ctx)
+                                                                .pop(),
+                                                        child: const Text(
+                                                            'Cerrar'),
                                                       ),
                                                     ),
                                                   ],
@@ -373,7 +386,8 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
                                         child: ListTile(
                                           leading: Icon(
                                             _getTipoIcon(item.tipo),
-                                            color: Theme.of(context).primaryColor,
+                                            color:
+                                                Theme.of(context).primaryColor,
                                           ),
                                           title: Text(
                                             item.comida.nombre,
