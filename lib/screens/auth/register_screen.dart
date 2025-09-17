@@ -116,147 +116,150 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Crear cuenta'),
-      ),
+      appBar: AppBar(title: const Text('Crear cuenta')),
       body: SingleChildScrollView(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: 800),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _registerKey,
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height - kToolbarHeight,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    TextFormField(
-                      //Ingreso nombre ---------------------------------------------------------------------------------------
-                      decoration: InputDecoration(
-                        labelText: 'Nombre',
-                        prefixIcon: Icon(Icons.person),
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Campo obligatorio';
-                        }
-                        if (!RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$')
-                            .hasMatch(value)) {
-                          return 'Solo se permiten letras';
-                        }
-                        return null;
-                      },
-                      onSaved: (value) => nombre = value ??
-                          '', // cuando valido todo, si estan los campos bien guarda
-                    ),
-                    SizedBox(height: 16),
-                    TextFormField(
-                      //Ingreso apellido---------------------------------------------------------------------------------------
-                      decoration: InputDecoration(
-                        labelText: 'Apellido',
-                        prefixIcon: Icon(Icons.badge),
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Campo obligatorio';
-                        }
-                        if (!RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$')
-                            .hasMatch(value)) {
-                          return 'Solo se permiten letras';
-                        }
-                        return null;
-                      },
-                      onSaved: (value) => apellido = value ??
-                          '', // cuando valido todo, si estan los campos bien guarda
-                    ),
-                    SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _seleccionarFechaNacimiento,
-                      child: Text(fechaNacimiento == null
-                          ? 'Seleccionar fecha de nacimiento'
-                          : 'Fecha: ${fechaNacimiento!.toLocal().toString().split(' ')[0]}'),
-                    ),
-                    Visibility(
-                      visible: errorFechaNacimiento != null,
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
-                        child: Text(
-                          errorFechaNacimiento ?? '',
-                          style: const TextStyle(color: Colors.red),
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 16),
-                    TextFormField(
-                      //Ingreso email---------------------------------------------------------------------------------------
-                      decoration: InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: Icon(Icons.email),
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Campo obligatorio';
-                        }
-                        if (!value.contains('@')) {
-                          return 'Debe contener un @';
-                        }
-                        return null;
-                      },
-                      onSaved: (value) => email = value ??
-                          '', // cuando valido todo, si estan los campos bien guarda
-                    ),
-                    SizedBox(height: 16),
-                    TextFormField(
-                      obscureText: obscureText,
-                      //Ingreso contrasena ---------------------------------------------------------------------------------------
-                      decoration: InputDecoration(
-                        labelText: 'Contraseña',
-                        prefixIcon: Icon(Icons.lock),
-                        suffixIcon: IconButton(
-                            icon: Icon(
-                              obscureText
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
+                    // Logo encima del formulario
+                    Image.asset('/images/logo.png', height: 96),
+                    const SizedBox(height: 16),
+                    Form(
+                      key: _registerKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          //Ingreso nombre ---------------------------------------------------------------------------------------
+                          TextFormField(
+                            decoration: InputDecoration(
+                                labelText: 'Nombre',
+                                prefixIcon: Icon(Icons.person),
+                                border: OutlineInputBorder()),
+                            keyboardType: TextInputType.emailAddress,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Campo obligatorio';
+                              }
+                              if (!RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$')
+                                  .hasMatch(value)) {
+                                return 'Solo se permiten letras';
+                              }
+                              return null;
+                            },
+                            onSaved: (value) => nombre = value ??
+                                '', // cuando valido todo, si estan los campos bien guarda
+                          ),
+                          const SizedBox(height: 16),
+                          //Ingreso apellido---------------------------------------------------------------------------------------
+                          TextFormField(
+                            decoration: InputDecoration(
+                                labelText: 'Apellido',
+                                prefixIcon: Icon(Icons.badge),
+                                border: OutlineInputBorder()),
+                            keyboardType: TextInputType.emailAddress,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Campo obligatorio';
+                              }
+                              if (!RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$')
+                                  .hasMatch(value)) {
+                                return 'Solo se permiten letras';
+                              }
+                              return null;
+                            },
+                            onSaved: (value) => apellido = value ??
+                                '', // cuando valido todo, si estan los campos bien guarda
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                              onPressed: _seleccionarFechaNacimiento,
+                              child: Text(fechaNacimiento == null
+                                  ? 'Seleccionar fecha de nacimiento'
+                                  : 'Fecha: ${fechaNacimiento!.toLocal().toString().split(' ')[0]}')),
+                          Visibility(
+                            visible: errorFechaNacimiento != null,
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Text(
+                                errorFechaNacimiento ?? '',
+                                style: const TextStyle(color: Colors.red),
+                              ),
                             ),
-                            onPressed: () {
-                              setState(() {
-                                obscureText = !obscureText;
-                              });
-                            }),
-                        border: OutlineInputBorder(),
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            decoration: InputDecoration(
+                                labelText: 'Email',
+                                prefixIcon: Icon(Icons.email),
+                                border: OutlineInputBorder()),
+                            keyboardType: TextInputType.emailAddress,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Campo obligatorio';
+                              }
+                              if (!value.contains('@')) {
+                                return 'Debe contener un @';
+                              }
+                              return null;
+                            },
+                            onSaved: (value) => email = value ??
+                                '', // cuando valido todo, si estan los campos bien guarda
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            obscureText: obscureText,
+                            decoration: InputDecoration(
+                                labelText: 'Contraseña',
+                                prefixIcon: Icon(Icons.lock),
+                                suffixIcon: IconButton(
+                                    icon: Icon(
+                                      obscureText
+                                          ? Icons.visibility
+                                          : Icons.visibility_off,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        obscureText = !obscureText;
+                                      });
+                                    }),
+                                border: OutlineInputBorder()),
+                            keyboardType: TextInputType.visiblePassword,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Ingrese una contraseña';
+                              }
+                              if (value.length < 6) {
+                                return 'Debe tener al menos 6 caracteres';
+                              }
+                              return null;
+                            },
+                            onSaved: (value) => password = value ??
+                                '', // cuando valido todo, si estan los campos bien guarda
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                              onPressed: () {
+                                _registrarUsuario();
+                              },
+                              child: const Text("Guardar")),
+                        ],
                       ),
-                      keyboardType: TextInputType.visiblePassword,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Ingrese una contraseña';
-                        }
-                        if (value.length < 6) {
-                          return 'Debe tener al menos 6 caracteres';
-                        }
-                        return null;
-                      },
-                      onSaved: (value) => password = value ??
-                          '', // cuando valido todo, si estan los campos bien guarda
                     ),
-                    SizedBox(height: 16),
-                    ElevatedButton(
-                        onPressed: () {
-                          _registrarUsuario();
-                          print("click");
-                        },
-                        child: const Text("Guardar"))
                   ],
                 ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
+               ),
+             ),
+           ),
+         ),
+       ),
+     );
+   }
+ }

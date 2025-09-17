@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:gymtrack_app/screens/dashboard/dashboard_screen.dart';
 import 'package:gymtrack_app/screens/auth/forgotPassword_screen.dart';
+import 'package:gymtrack_app/screens/auth/register_screen.dart';
 
 /// Pantalla de Login con Firebase Auth y navegación al Dashboard
 class LoginScreen extends StatefulWidget {
@@ -95,115 +96,106 @@ class _LoginScreenState extends State<LoginScreen> {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset(
-              '/images/2.png', // ruta del ícono
-              height: 50,
-            ),
-            const SizedBox(width: 20), // espacio entre ícono y texto
-            Text(
-              'Iniciar Sesión',
-              style: Theme.of(context)
-                  .appBarTheme
-                  .titleTextStyle, // usa Orbitron si está definido
-            ),
+            Image.asset('/images/2.png', height: 50),
+            const SizedBox(width: 20),
+            Text('Iniciar Sesión', style: Theme.of(context).appBarTheme.titleTextStyle),
           ],
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Campo Email
-              TextFormField(
-                controller: _emailCtrl,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Ingresa tu email';
-                  }
-                  if (!value.contains('@')) {
-                    return 'Email inválido';
-                  }
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: 16),
-
-              // Campo Contraseña
-              TextFormField(
-                controller: _passCtrl,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Contraseña',
-                  prefixIcon: Icon(Icons.lock),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Ingresa tu contraseña';
-                  }
-                  if (value.length < 6) {
-                    return 'Mínimo 6 caracteres';
-                  }
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: 8),
-
-              const SizedBox(height: 16),
-
-              // Mensaje de error
-              if (_errorMessage != null)
-                Text(
-                  _errorMessage!,
-                  style: const TextStyle(color: Colors.red),
-                  textAlign: TextAlign.center,
-                ),
-
-              const SizedBox(height: 8),
-
-              // Botón Entrar
-              ElevatedButton(
-                onPressed: _loading ? null : _submit,
-                child: _loading
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Text('Entrar'),
-              ),
-
-              // Enlace de recuperación de contraseña
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ForgotPasswordScreen(),
+      body: SingleChildScrollView(
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height - kToolbarHeight,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Logo encima del formulario
+                    Image.asset('/images/logo.png'),
+                    const SizedBox(height: 24),
+                    Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Campo Email
+                          TextFormField(
+                            controller: _emailCtrl,
+                            keyboardType: TextInputType.emailAddress,
+                            decoration: const InputDecoration(
+                              labelText: 'Email',
+                              prefixIcon: Icon(Icons.email),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) return 'Ingresa tu email';
+                              if (!value.contains('@')) return 'Email inválido';
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          // Campo Contraseña
+                          TextFormField(
+                            controller: _passCtrl,
+                            obscureText: true,
+                            decoration: const InputDecoration(
+                              labelText: 'Contraseña',
+                              prefixIcon: Icon(Icons.lock),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) return 'Ingresa tu contraseña';
+                              if (value.length < 6) return 'Mínimo 6 caracteres';
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          // Mensaje de error
+                          if (_errorMessage != null)
+                            Text(_errorMessage!, style: const TextStyle(color: Colors.red), textAlign: TextAlign.center),
+                          const SizedBox(height: 8),
+                          // Botón Entrar (centrado por la columna stretch)
+                          ElevatedButton(
+                            onPressed: _loading ? null : _submit,
+                            child: _loading
+                                ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                : const Text('Entrar'),
+                          ),
+                          const SizedBox(height: 8),
+                          // Enlace de recuperación centrado
+                          Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()));
+                                  },
+                                  child: const Text('¿Olvidaste tu contraseña?'),
+                                ),
+                                const SizedBox(height: 6),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen()));
+                                  },
+                                  child: const Text('Crear cuenta'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    );
-                  },
-                  child: const Text('¿Olvidaste tu contraseña?'),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+               ),
+             ),
+           ),
+         ),
+       ),
+     );
+   }
+ }

@@ -1,5 +1,6 @@
 // ... imports existentes ...
 import 'dart:convert';
+import 'dart:async';
 import 'package:gymtrack_app/services/gamification_service.dart';
 import 'package:gymtrack_app/services/gamification_repository.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:gymtrack_app/models/ejercicioAsignado.dart';
 import 'package:gymtrack_app/services/routine_service.dart';
+
 
 class SesionScreen extends StatefulWidget {
   final RoutineService service;
@@ -28,6 +30,36 @@ class SesionScreen extends StatefulWidget {
 }
 
 class _SesionScreenState extends State<SesionScreen> {
+  bool _guardando = false; // <- declara la bandera aquí
+  // Timer / cronómetro
+  final Stopwatch _stopwatch = Stopwatch();
+  Timer? _timer;
+  Duration get _elapsed => _stopwatch.elapsed;
+  String _formatDuration(Duration d) {
+    final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '${d.inHours}:${minutes}:${seconds}';
+  }
+  void _startTimer() {
+    if (_stopwatch.isRunning) return;
+    _stopwatch.start();
+    _timer ??= Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+  void _stopTimer() {
+    if (!_stopwatch.isRunning) return;
+    _stopwatch.stop();
+    _timer?.cancel();
+    _timer = null;
+    if (mounted) setState(() {});
+  }
+  void _resetTimer() {
+    _stopwatch.reset();
+    _timer?.cancel();
+    _timer = null;
+    if (mounted) setState(() {});
+  }
   void _updateCompletionStates() {
     for (int i = 0; i < _exercises.length; i++) {
       final e = _exercises[i];
@@ -35,8 +67,9 @@ class _SesionScreenState extends State<SesionScreen> {
       final pesoUsado = double.tryParse(_pesoCtrls[i].text) ?? 0;
       final repsPlanificadas = e.series * e.repeticiones;
       final pesoPlanificado = e.peso ?? 0;
-      final isCompleted = repsRealizadas == repsPlanificadas &&
-          (pesoPlanificado == 0 || pesoUsado == pesoPlanificado);
+      // Aceptar ≥ para reps y peso (si hay peso planificado)
+      final isCompleted = repsRealizadas >= repsPlanificadas &&
+          (pesoPlanificado == 0 || pesoUsado >= pesoPlanificado);
       final isIncomplete =
           !isCompleted && (repsRealizadas > 0 || pesoUsado > 0);
       _completed[i] = isCompleted;
@@ -65,6 +98,8 @@ class _SesionScreenState extends State<SesionScreen> {
     Connectivity().onConnectivityChanged.listen((status) {
       if (status != ConnectivityResult.none) _syncPending();
     });
+    // Iniciar el cronómetro al empezar la sesión (si quieres que empiece automáticamente)
+    _startTimer();
   }
 
   Future<void> _loadExercises() async {
@@ -124,71 +159,125 @@ class _SesionScreenState extends State<SesionScreen> {
       c.dispose();
     }
     _comentarioGeneralCtrl.dispose();
+    // limpiar timer/stopwatch
+    _timer?.cancel();
+    _stopwatch.stop();
     super.dispose();
   }
 
   Future<void> _finishSession() async {
-    for (int i = 0; i < _exercises.length; i++) {
-      if (!_completed[i] && !_incomplete[i]) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(
-                  'Marca completado o incompleto para "${_exercises[i].nombre}"')),
-        );
-        return;
+    if (_guardando) return; // evita doble envío
+    setState(() => _guardando = true);
+    try {
+      for (int i = 0; i < _exercises.length; i++) {
+        if (!_completed[i] && !_incomplete[i]) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(
+                    'Marca completado o incompleto para "${_exercises[i].nombre}"')),
+          );
+          return;
+        }
       }
-    }
 
-    final doc = {
-      'uid': widget.userId,
-      'day': widget.day,
-      'date': Timestamp.now(),
-      'comentario_general': _comentarioGeneralCtrl.text.trim(),
-      'exercises': List.generate(_exercises.length, (i) {
-        final e = _exercises[i];
-        final pesoUsado = double.tryParse(_pesoCtrls[i].text);
-        return {
-          'nombre': e.nombre,
-          'grupoMuscular': e.grupoMuscular,
-          'series': e.series,
-          'repsPlanificadas': e.series * e.repeticiones,
-          'repsRealizadas': int.tryParse(_doneCtrls[i].text) ?? 0,
-          'pesoPlanificado': e.peso,
-          'peso_usado': (pesoUsado != null && pesoUsado > 0) ? pesoUsado : null,
-          'completed': _completed[i],
-          'incomplete': _incomplete[i],
+      final doc = {
+        'uid': widget.userId,
+        'day': widget.day,
+        'date': Timestamp.now(),
+        'comentario_general': _comentarioGeneralCtrl.text.trim(),
+        'exercises': List.generate(_exercises.length, (i) {
+          final e = _exercises[i];
+          final pesoUsado = double.tryParse(_pesoCtrls[i].text);
+          return {
+            'nombre': e.nombre,
+            'grupoMuscular': e.grupoMuscular,
+            'series': e.series,
+            'repsPlanificadas': e.series * e.repeticiones,
+            'repsRealizadas': int.tryParse(_doneCtrls[i].text) ?? 0,
+            'pesoPlanificado': e.peso,
+            'peso_usado': (pesoUsado != null && pesoUsado > 0) ? pesoUsado : null,
+            'completed': _completed[i],
+            'incomplete': _incomplete[i],
+          };
+        }),
+      };
+
+      final conn = await Connectivity().checkConnectivity();
+      if (conn == ConnectivityResult.none) {
+        final pending = _prefs.getStringList('pending_sessions') ?? [];
+        // Asegurarnos de usar el UID actual del usuario autenticado
+        final currentUid = FirebaseAuth.instance.currentUser?.uid;
+        if (currentUid == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Usuario no autenticado')),
+          );
+          setState(() => _guardando = false);
+          return;
+        }
+
+        final doc = {
+          'uid': currentUid, // <-- usar UID seguro aquí
+          'day': widget.day,
+          'date': Timestamp.now(),
+          // guardar duración en minutos (redondeo hacia arriba si hay segundos)
+          'duracionMin': _stopwatch.elapsed.inSeconds == 0 ? 0 : ((_stopwatch.elapsed.inSeconds + 59) ~/ 60),
+          'comentario_general': _comentarioGeneralCtrl.text.trim(),
+          'exercises': List.generate(_exercises.length, (i) {
+            final e = _exercises[i];
+            final pesoUsado = double.tryParse(_pesoCtrls[i].text);
+            return {
+              'nombre': e.nombre,
+              'grupoMuscular': e.grupoMuscular,
+              'series': e.series,
+              'repsPlanificadas': e.series * e.repeticiones,
+              'repsRealizadas': int.tryParse(_doneCtrls[i].text) ?? 0,
+              'pesoPlanificado': e.peso,
+              'peso_usado': (pesoUsado != null && pesoUsado > 0) ? pesoUsado : null,
+              'completed': _completed[i],
+              'incomplete': _incomplete[i],
+            };
+          }),
         };
-      }),
-    };
 
-    final conn = await Connectivity().checkConnectivity();
-    if (conn == ConnectivityResult.none) {
-      final pending = _prefs.getStringList('pending_sessions') ?? [];
-      pending.add(json.encode(doc));
-      await _prefs.setStringList('pending_sessions', pending);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Sin conexión: sesión guardada localmente')),
-      );
-    } else {
-      final docRef =
-          await FirebaseFirestore.instance.collection('sesiones').add(doc);
-      final sesionId = docRef.id;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sesión guardada exitosamente')),
-      );
-      // --- INTEGRACIÓN GAMIFICACIÓN ---
-      final gamificationRepo = GamificationRepository(
-          FirebaseFirestore.instance, FirebaseAuth.instance);
-      final gamificationService = GamificationService(gamificationRepo);
-      await gamificationService.onSesionCompletada(
-          widget.userId, DateTime.now(),
-          sesionId: sesionId);
-      // --- FIN INTEGRACIÓN ---
+        pending.add(json.encode(doc));
+        await _prefs.setStringList('pending_sessions', pending);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sin conexión: sesión guardada localmente')),
+        );
+        setState(() {
+          _guardando = false;
+        });
+        return;
+      } else {
+        // incluir duracionMin también en el documento en línea
+        final docToSave = {
+          ...doc,
+          'duracionMin': _stopwatch.elapsed.inSeconds == 0 ? 0 : ((_stopwatch.elapsed.inSeconds + 59) ~/ 60),
+        };
+        final docRef =
+            await FirebaseFirestore.instance.collection('sesiones').add(docToSave);
+        final sesionId = docRef.id;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sesión guardada exitosamente')),
+        );
+        // --- INTEGRACIÓN GAMIFICACIÓN ---
+        final gamificationRepo = GamificationRepository(
+            FirebaseFirestore.instance, FirebaseAuth.instance);
+        final gamificationService = GamificationService(gamificationRepo);
+        await gamificationService.onSesionCompletada(
+            widget.userId, DateTime.now(),
+            sesionId: sesionId);
+        // --- FIN INTEGRACIÓN ---
+      }
+
+      await _prefs.remove(_localKey);
+      Navigator.of(context).pop();
+    } catch (e) {
+      // maneja errores si quieres
+      rethrow;
+    } finally {
+      if (mounted) setState(() => _guardando = false);
     }
-
-    await _prefs.remove(_localKey);
-    Navigator.of(context).pop();
   }
 
   @override
@@ -208,6 +297,31 @@ class _SesionScreenState extends State<SesionScreen> {
                   child: ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
+                      // Mostrar cronómetro y controles rápidos
+                      Center(
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 6),
+                            Text(_formatDuration(_elapsed), style: Theme.of(context).textTheme.headlineMedium),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                ElevatedButton(
+                                  onPressed: _stopwatch.isRunning ? _stopTimer : _startTimer,
+                                  child: Text(_stopwatch.isRunning ? 'Pausar' : 'Iniciar'),
+                                ),
+                                const SizedBox(width: 12),
+                                OutlinedButton(
+                                  onPressed: _resetTimer,
+                                  child: const Text('Reiniciar'),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                        ),
+                      ),
                       for (int i = 0; i < _exercises.length; i++)
                         _buildExerciseCard(i),
                       const SizedBox(height: 24),
@@ -228,12 +342,14 @@ class _SesionScreenState extends State<SesionScreen> {
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: ElevatedButton(
-                    onPressed: allChecked ? _finishSession : null,
+                    onPressed: (allChecked && !_guardando) ? _finishSession : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
                       foregroundColor: Colors.white,
                     ),
-                    child: const Text('Entrenamiento finalizado'),
+                    child: _guardando
+                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Text('Entrenamiento finalizado'),
                   ),
                 ),
               ],
@@ -248,8 +364,9 @@ class _SesionScreenState extends State<SesionScreen> {
     final pesoUsado = double.tryParse(_pesoCtrls[i].text) ?? 0;
     final repsPlanificadas = e.series * e.repeticiones;
     final pesoPlanificado = e.peso ?? 0;
-    final isCompleted = repsRealizadas == repsPlanificadas &&
-        (pesoPlanificado == 0 || pesoUsado == pesoPlanificado);
+    // Aceptar ≥ para reps y peso (si hay peso planificado)
+    final isCompleted = repsRealizadas >= repsPlanificadas &&
+        (pesoPlanificado == 0 || pesoUsado >= pesoPlanificado);
     final isIncomplete = !isCompleted && (repsRealizadas > 0 || pesoUsado > 0);
     _completed[i] = isCompleted;
     _incomplete[i] = isIncomplete;
@@ -308,7 +425,7 @@ class _SesionScreenState extends State<SesionScreen> {
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(Icons.fitness_center,
+                Icon(Icons.repeat,
                     color: Theme.of(context).primaryColor, size: 22),
                 const SizedBox(width: 6),
                 Expanded(

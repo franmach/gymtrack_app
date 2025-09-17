@@ -157,7 +157,7 @@ La respuesta debe ser SOLO un JSON con esta estructura:
         "grupoMuscular": "Pecho",
         "series": 4,
         "repeticiones": 10,
-        "peso": 22.5
+        "peso": 22
       },
       ...
     ],

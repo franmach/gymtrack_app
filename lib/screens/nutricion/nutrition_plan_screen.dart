@@ -151,6 +151,24 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
     );
   }
 
+  // Helper seguro para obtener la "descripcion" de Comida sin asumir el nombre exacto
+  String _getComidaDescripcion(dynamic comida) {
+    try {
+      if (comida == null) return '';
+      // Si es Map
+      if (comida is Map) {
+        return (comida['descripcion'] ?? comida['description'] ?? comida['detalle'] ?? '') as String;
+      }
+      // Intentar propiedades comunes en distintos modelos
+      final dynamic d = (comida as dynamic).descripcion ??
+          (comida as dynamic).description ??
+          (comida as dynamic).detalle;
+      return (d ?? '') as String;
+    } catch (_) {
+      return '';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -244,66 +262,137 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
                             fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
+
+                      // Reemplazado: usar Column para lista vertical y tarjetas full width
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: weeklyPlan.entries.map((entry) {
-                          return SizedBox(
-                            width: MediaQuery.of(context).size.width *
-                                0.47, // casi la mitad
-                            child: Card(
-                              color: Colors.black,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
-                              elevation: 4,
-                              child: Padding(
-                                padding: const EdgeInsets.all(12),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      entry.key,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    ...entry.value.map((item) => Card(
-                                          color: Colors.grey[900],
-                                          margin: const EdgeInsets.symmetric(
-                                              vertical: 4),
-                                          shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8)),
-                                          child: ListTile(
-                                            leading: Icon(
-                                              _getTipoIcon(item.tipo),
-                                              color: Theme.of(context).primaryColor,
-                                            ),
-                                            title: Text(
-                                              item.comida.nombre,
-                                              style: const TextStyle(
-                                                  color: Colors.white),
-                                            ),
-                                            subtitle: Text(
-                                              '${item.comida.macros.proteinGrams}g proteína • '
-                                              '${item.comida.macros.calories.toStringAsFixed(0)} kcal • '
-                                              '${item.portion} porción'
-                                              '${item.tipo.isNotEmpty ? ' • ${item.tipo}' : ''}',
-                                              style: const TextStyle(
-                                                  color: Colors.white70),
-                                            ),
-                                          ),
-                                        )),
-                                  ],
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  entry.key,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(height: 8),
+                                // Lista vertical de platos del día
+                                Column(
+                                  children: entry.value.map((item) {
+                                    return Card(
+                                      color: Colors.grey[900],
+                                      margin: const EdgeInsets.symmetric(
+                                          vertical: 6),
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8)),
+                                      child: InkWell(
+                                        borderRadius:
+                                            BorderRadius.circular(8),
+                                        onTap: () {
+                                          // Mostrar detalle al tocar (bottom sheet)
+                                          showModalBottomSheet(
+                                            context: context,
+                                            backgroundColor: Colors.grey[900],
+                                            shape: const RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.vertical(
+                                                  top: Radius.circular(16)),
+                                            ),
+                                            builder: (ctx) {
+                                              final detalle =
+                                                  _getComidaDescripcion(item.comida);
+                                              return Padding(
+                                                padding:
+                                                    const EdgeInsets.all(16.0),
+                                                child: Column(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      item.comida.nombre,
+                                                      style: const TextStyle(
+                                                        fontSize: 18,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: Colors.white,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    Row(
+                                                      children: [
+                                                        Icon(
+                                                          _getTipoIcon(item.tipo),
+                                                          color: Theme.of(context).primaryColor,
+                                                        ),
+                                                        const SizedBox(width: 8),
+                                                        Text(
+                                                          item.tipo,
+                                                          style: const TextStyle(
+                                                              color: Colors.white70),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    const SizedBox(height: 12),
+                                                    Text(
+                                                      '${item.comida.macros.proteinGrams}g proteína • ${item.comida.macros.calories.toStringAsFixed(0)} kcal • ${item.portion} porción',
+                                                      style: const TextStyle(
+                                                          color: Colors.white70),
+                                                    ),
+                                                    const SizedBox(height: 12),
+                                                    // Mostrar detalle solo si existe (usando helper dinámico)
+                                                    if (detalle.isNotEmpty)
+                                                      Text(
+                                                        detalle,
+                                                        style: const TextStyle(
+                                                            color: Colors.white70),
+                                                      ),
+                                                    const SizedBox(height: 8),
+                                                    Align(
+                                                      alignment: Alignment.centerRight,
+                                                      child: TextButton(
+                                                        onPressed: () =>
+                                                            Navigator.of(ctx).pop(),
+                                                        child: const Text('Cerrar'),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            },
+                                          );
+                                        },
+                                        child: ListTile(
+                                          leading: Icon(
+                                            _getTipoIcon(item.tipo),
+                                            color: Theme.of(context).primaryColor,
+                                          ),
+                                          title: Text(
+                                            item.comida.nombre,
+                                            style: const TextStyle(
+                                                color: Colors.white),
+                                          ),
+                                          // mostramos solo el nombre; el detalle aparece al tocar
+                                          trailing: const Icon(
+                                            Icons.arrow_forward_ios,
+                                            color: Colors.white54,
+                                            size: 16,
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
                             ),
                           );
                         }).toList(),
                       ),
+
                       const SizedBox(height: 24),
                       Center(
                         child: ElevatedButton(

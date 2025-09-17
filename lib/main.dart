@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'gymtrack_theme.dart'; 
+import 'gymtrack_theme.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -9,10 +9,9 @@ import 'package:gymtrack_app/services/nutrition_ai_service.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/perfil/perfil_screen.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'screens/main_tabbed_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,6 +32,7 @@ void main() async {
         Provider<NutritionAIService>(
           create: (ctx) => NutritionAIService(),
         ),
+        // Provider<UserRepository> eliminado — no se inyecta globalmente ahora
       ],
       child: const GymTrackApp(),
     ),
@@ -48,10 +48,38 @@ class GymTrackApp extends StatelessWidget {
       title: 'GymTrack',
       debugShowCheckedModeBanner: false,
       theme: gymTrackTheme,
-      home: const HomeScreen(),
+      home: const AuthGate(),
       routes: {
         '/profile': (context) => const PerfilScreen(),
         // Agrega aquí más rutas si las necesitas
+      },
+    );
+  }
+}
+
+// Widget que muestra login si no hay usuario autenticado
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final user = snapshot.data;
+        if (user == null) {
+          // No hay usuario: abrir pantalla de login
+          return const LoginScreen();
+        }
+
+        // Usuario logueado: mostrar la interfaz principal
+        return const MainTabbedScreen();
       },
     );
   }
@@ -84,7 +112,8 @@ class HomeScreen extends StatelessWidget {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                      MaterialPageRoute(
+                          builder: (context) => const RegisterScreen()),
                     );
                   },
                   child: const Text('Registrarse'),
@@ -99,7 +128,8 @@ class HomeScreen extends StatelessWidget {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                      MaterialPageRoute(
+                          builder: (context) => const LoginScreen()),
                     );
                   },
                   child: const Text('Iniciar Sesión'),
@@ -111,5 +141,4 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
-
 }
