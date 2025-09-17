@@ -9,7 +9,7 @@ class ProgresoCorporal {
   final double brazos;
   final double piernas;
   final double pecho;
-  final String fotoUrl;
+  final String? fotoUrl;
 
   ProgresoCorporal({
     required this.id,
@@ -20,7 +20,7 @@ class ProgresoCorporal {
     required this.brazos,
     required this.piernas,
     required this.pecho,
-    required this.fotoUrl,
+    this.fotoUrl,
   });
 
   factory ProgresoCorporal.fromMap(Map<String, dynamic> map) =>
@@ -37,7 +37,7 @@ class ProgresoCorporal {
         brazos: (map['brazos'] as num).toDouble(),
         piernas: (map['piernas'] as num).toDouble(),
         pecho: (map['pecho'] as num).toDouble(),
-        fotoUrl: map['foto_url'] as String,
+        fotoUrl: map['foto_url'] as String?,
       );
 
   Map<String, dynamic> toMap() => {

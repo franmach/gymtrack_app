@@ -1,5 +1,3 @@
-// lib/screens/auth/login_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:gymtrack_app/screens/dashboard/dashboard_screen.dart';

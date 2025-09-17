@@ -5,10 +5,13 @@ import 'package:gymtrack_app/screens/contenido_edu/educational_advice_screen.dar
 import 'package:gymtrack_app/screens/historial/historial_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gymtrack_app/main.dart';
+import 'package:gymtrack_app/screens/notificacion/notificaciones_screen.dart';
 import 'package:gymtrack_app/services/firestore_routine_service.dart';
 import 'package:gymtrack_app/screens/session/day_selection_screen.dart';
 import 'package:gymtrack_app/screens/session/timer_screen.dart';
 import 'package:gymtrack_app/screens/admin/gimnasio_screen.dart';
+import 'package:gymtrack_app/screens/progreso/registroProgreso_screen.dart';
+import 'package:gymtrack_app/screens/progreso/visualizarProgreso_screen.dart';
 import 'package:gymtrack_app/models/usuario.dart';
 import 'package:gymtrack_app/services/ajuste_rutina_service.dart';
 import 'package:gymtrack_app/services/ai_service.dart';

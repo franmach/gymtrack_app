@@ -8,6 +8,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  flutter_local_notifications: ^17.2.0
+  timezone: ^0.9.2
+  awesome_notifications: ^0.10.1
 
   # Firebase
   firebase_core: ^2.30.0
@@ -16,22 +21,18 @@ dependencies:
   firebase_storage: ^11.7.3
   image_picker: ^1.0.4
 
-  # Dependencias para oersistencia lcal 
-  shared_preferences: ^2.1.0 # Guarda pares clave–valor simples
+  # Dependencias para persistencia local
+  shared_preferences: ^2.1.0
 
   # Detección de estado de la red (online/offline)
-  connectivity_plus: ^4.0.0  # Permite reaccionar a cambios de conexión
-
-  vibration: ^1.7.4         # Para vibración
-  audioplayers: 6.5.0      # Para reproducir sonidos
+  connectivity_plus: ^4.0.0
 
   # Estado y configuración
   provider: ^6.1.2
   flutter_dotenv: ^5.1.0
 
   # Gráficos
-  fl_chart: ^0.64.0
-
+  fl_chart: ^0.66.2
 
   # IA (Gemini)
   google_generative_ai: ^0.4.7
@@ -39,9 +40,10 @@ dependencies:
 
   # Extras
   http: ^1.2.1
-  flutter_local_notifications: ^17.1.2
-  intl: ^0.18.1
+  intl: 0.20.2
   google_fonts: ^6.1.0
+  uuid: ^4.5.1
+
 
 
 dev_dependencies:
@@ -49,10 +51,8 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
 
-
 flutter:
   uses-material-design: true
-
   assets:
     - .env
     - assets/images/profile_placeholder.png

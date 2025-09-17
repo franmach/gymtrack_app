@@ -19,6 +19,7 @@ class RutinaService {
         minPorSesion: usuario.minPorSesion,
         genero: usuario.genero,
         lesiones: (usuario.lesiones ?? []).join(', '),
+        gimnasioId: usuario.gimnasioId,
       );
 
       final rutinasRef = FirebaseFirestore.instance.collection('rutinas');

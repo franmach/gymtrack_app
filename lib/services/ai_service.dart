@@ -30,7 +30,7 @@ class AiService {
     required int dias,
     required int minPorSesion,
     required String genero,
-    required String lesiones,
+    required String lesiones, String? gimnasioId,
   }) async {
     final prompt = '''
 Sos un entrenador personal experto. Tu tarea es generar una rutina de entrenamiento mensual para un usuario, teniendo en cuenta sus datos y objetivos.

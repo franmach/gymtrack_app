@@ -57,6 +57,7 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
   Future<void> _loadUserProfile() async {
     final uid = _auth.currentUser!.uid;
     final doc = await _firestore.collection('usuarios').doc(uid).get();
+    final doc = await _firestore.collection('usuarios').doc(uid).get();
     if (doc.exists) {
       setState(() {
         userProfile = doc.data()!;
@@ -85,6 +86,7 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
         excludedFoods = List.from(plan.excludedFoods);
         weeklyPlan = {
           for (var item in plan.weeklyPlan)
+            item.day: plan.weeklyPlan.where((e) => e.day == item.day).toList()
             item.day: plan.weeklyPlan.where((e) => e.day == item.day).toList()
         };
       });
@@ -238,6 +240,8 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
                       children: excludedFoods
                           .map((e) => Chip(
                                 label: Text(e),
+                                onDeleted: () =>
+                                    setState(() => excludedFoods.remove(e)),
                                 onDeleted: () =>
                                     setState(() => excludedFoods.remove(e)),
                               ))
