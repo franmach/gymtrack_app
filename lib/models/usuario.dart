@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Usuario {
   final String uid;
   final String nombre;
@@ -15,6 +17,7 @@ class Usuario {
   final String rol;
   final DateTime fechaRegistro;
   final String? gimnasioId;
+  final DateTime? ultimaAsistencia;
 
   Usuario({
     required this.uid,
@@ -33,6 +36,7 @@ class Usuario {
     required this.rol,
     required this.fechaRegistro,
     this.gimnasioId,
+    this.ultimaAsistencia,
   });
 
   factory Usuario.fromMap(Map<String, dynamic> data, String uid) {
@@ -53,9 +57,17 @@ class Usuario {
           ?.map((e) => e.toString())
           .toList(),
       rol: data['rol'] ?? 'alumno',
-      fechaRegistro:
-          DateTime.tryParse(data['fechaRegistro'] ?? '') ?? DateTime.now(),
+      fechaRegistro: data['fechaRegistro'] is Timestamp
+          ? (data['fechaRegistro'] as Timestamp).toDate()
+          : data['fechaRegistro'] is String
+              ? (DateTime.tryParse(data['fechaRegistro']) ?? DateTime.now())
+              : DateTime.now(),
       gimnasioId: data['gimnasioId'],
+      ultimaAsistencia: data['ultimaAsistencia'] is Timestamp
+          ? (data['ultimaAsistencia'] as Timestamp).toDate()
+          : data['ultimaAsistencia'] is String
+              ? DateTime.tryParse(data['ultimaAsistencia'])
+              : null,
     );
   }
 
@@ -77,6 +89,9 @@ class Usuario {
       'rol': rol,
       'fechaRegistro': fechaRegistro.toIso8601String(),
       'gimnasioId': gimnasioId,
+      'ultimaAsistencia': ultimaAsistencia != null
+          ? Timestamp.fromDate(ultimaAsistencia!)
+          : null,
     };
   }
 }

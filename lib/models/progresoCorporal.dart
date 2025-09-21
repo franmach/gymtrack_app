@@ -27,7 +27,11 @@ class ProgresoCorporal {
       ProgresoCorporal(
         id: map['id'] as String,
         usuarioId: map['usuario_id'] as String,
-        fecha: (map['fecha'] as Timestamp).toDate(),
+        fecha: map['fecha'] is Timestamp
+            ? (map['fecha'] as Timestamp).toDate()
+            : map['fecha'] is String
+                ? DateTime.tryParse(map['fecha']) ?? DateTime.now()
+                : DateTime.now(),
         peso: (map['peso'] as num).toDouble(),
         cintura: (map['cintura'] as num).toDouble(),
         brazos: (map['brazos'] as num).toDouble(),

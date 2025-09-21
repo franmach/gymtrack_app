@@ -6,89 +6,91 @@ const Color negro = Color(0xFF000000);
 const Color verdeFluor = Color(0xFF4CFF00);
 const Color grisClaro = Color(0xFFa7a7a7);
 
-final ThemeData gymTrackTheme = ThemeData(
+final ThemeData gymTrackTheme = ThemeData.dark().copyWith(
   scaffoldBackgroundColor: const Color.fromARGB(255, 0, 0, 0),
   primaryColor: verdeFluor,
-  colorScheme: ColorScheme(
-    brightness: Brightness.light,
+  colorScheme: ColorScheme.dark(
     primary: verdeFluor,
     onPrimary: negro,
     secondary: grisClaro,
-    onSecondary: negro,
-    surface:negro, 
+    onSecondary: blanco,
+    surface: negro,
     onSurface: blanco,
+    background: const Color.fromARGB(255, 10, 10, 10),
+    onBackground: blanco,
     error: const Color.fromARGB(255, 255, 17, 0),
     onError: blanco,
   ),
   useMaterial3: true,
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ButtonStyle(
-      backgroundColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.hovered) || states.contains(WidgetState.pressed)) {
-          return negro; // color más claro en hover
+      backgroundColor: MaterialStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(MaterialState.pressed) || states.contains(MaterialState.hovered)) {
+          return verdeFluor.withOpacity(0.85);
         }
         return verdeFluor;
       }),
-      foregroundColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.hovered)  || states.contains(WidgetState.pressed)) {
-          return verdeFluor; // color más claro en hover
+      foregroundColor: MaterialStateProperty.resolveWith<Color?>((states) {
+        if (states.contains(MaterialState.pressed) || states.contains(MaterialState.hovered)) {
+          return negro;
         }
         return negro;
       }),
-      textStyle: WidgetStateProperty.all(
-      GoogleFonts.rajdhani(
-        fontWeight: FontWeight.bold,
-        fontSize: 18,
+      textStyle: MaterialStateProperty.all(
+        GoogleFonts.rajdhani(
+          fontWeight: FontWeight.bold,
+          fontSize: 18,
+        ),
       ),
-      ),
-      padding: WidgetStateProperty.all(
+      padding: MaterialStateProperty.all(
         const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
       ),
-      shape: WidgetStateProperty.all(
+      shape: MaterialStateProperty.all(
         RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
-      elevation: WidgetStateProperty.all(8),
-      shadowColor: WidgetStateProperty.all(
-        verdeFluor.withAlpha(204),
+      elevation: MaterialStateProperty.all(8),
+      shadowColor: MaterialStateProperty.all(
+        verdeFluor.withAlpha(200),
       ),
     ),
   ),
   inputDecorationTheme: InputDecorationTheme(
     filled: true,
-    fillColor: grisClaro, // Fondo gris para los TextField
+    fillColor: grisClaro.withOpacity(0.12),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: BorderSide(color: grisClaro),
+      borderSide: BorderSide(color: grisClaro.withOpacity(0.12)),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: BorderSide(color: grisClaro, width: 2),
+      borderSide: BorderSide(color: verdeFluor.withOpacity(0.9), width: 2),
     ),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: BorderSide(color: grisClaro),
+      borderSide: BorderSide(color: grisClaro.withOpacity(0.12)),
     ),
-    labelStyle: GoogleFonts.rajdhani(color: negro),
-  floatingLabelStyle: GoogleFonts.rajdhani(color: blanco),
-  hintStyle: GoogleFonts.rajdhani(color: blanco),
-  prefixStyle: GoogleFonts.rajdhani(color: blanco),
-  suffixStyle: GoogleFonts.rajdhani(color: blanco),
+    labelStyle: GoogleFonts.rajdhani(color: blanco),
+    floatingLabelStyle: GoogleFonts.rajdhani(color: verdeFluor),
+    hintStyle: GoogleFonts.rajdhani(color: blanco.withOpacity(0.7)),
+    prefixStyle: GoogleFonts.rajdhani(color: blanco),
+    suffixStyle: GoogleFonts.rajdhani(color: blanco),
   ),
   textTheme: TextTheme(
-  bodyMedium: GoogleFonts.rajdhani(fontSize: 16, color: blanco),
-  labelLarge: GoogleFonts.rajdhani(fontSize: 18, color: blanco),
-  headlineSmall: GoogleFonts.orbitron(fontSize: 24, fontWeight: FontWeight.bold, color: blanco),
-  headlineMedium: GoogleFonts.orbitron(fontSize: 28, fontWeight: FontWeight.bold, color: blanco),
-),
-
-  appBarTheme: AppBarTheme(
-
-  elevation: 0,
-  titleTextStyle: GoogleFonts.orbitron(
-    fontSize: 22,
-    fontWeight: FontWeight.bold,
-    color: const Color.fromARGB(255, 255, 255, 255),
+    bodyLarge: GoogleFonts.rajdhani(fontSize: 16, color: blanco),
+    bodyMedium: GoogleFonts.rajdhani(fontSize: 16, color: blanco),
+    labelLarge: GoogleFonts.rajdhani(fontSize: 18, color: blanco),
+    headlineSmall: GoogleFonts.orbitron(fontSize: 24, fontWeight: FontWeight.bold, color: blanco),
+    headlineMedium: GoogleFonts.orbitron(fontSize: 28, fontWeight: FontWeight.bold, color: blanco),
   ),
-),
+  appBarTheme: AppBarTheme(
+    backgroundColor: Colors.transparent,
+    elevation: 0,
+    titleTextStyle: GoogleFonts.orbitron(
+      fontSize: 22,
+      fontWeight: FontWeight.bold,
+      color: blanco,
+    ),
+    iconTheme: const IconThemeData(color: blanco),
+  ),
 );
