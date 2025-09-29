@@ -21,6 +21,7 @@ import 'dart:math';
 import 'package:gymtrack_app/services/advice_service.dart';
 import 'package:intl/intl.dart';
 import 'package:gymtrack_app/gymtrack_theme.dart';
+import 'package:gymtrack_app/screens/admin/admin_hub_screen.dart'; 
 
 /// DashboardScreen: Pantalla principal tras iniciar sesión
 typedef DocSnapshot = DocumentSnapshot<Map<String, dynamic>>;
@@ -413,6 +414,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             onPressed: () {
                               Navigator.of(context).push(MaterialPageRoute(
                                   builder: (_) => const TimerScreen()));
+                            },
+                          ),
+
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.admin_panel_settings),
+                            label: const Text('Panel Administrador'),
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => const AdminHubScreen()),
+                              );
                             },
                           ),
                         ],
