@@ -55,5 +55,5 @@ flutter:
   uses-material-design: true
   assets:
     - .env
-    - assets/images/profile_placeholder.png
+    - assets/images/
     - assets/badges/

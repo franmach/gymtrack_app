@@ -130,7 +130,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // Logo encima del formulario
-                    Image.asset('/images/logo.png', height: 96),
+                    Image.asset('assets/images/logo.png', height: 96),
                     const SizedBox(height: 16),
                     Form(
                       key: _registerKey,

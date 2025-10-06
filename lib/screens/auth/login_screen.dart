@@ -94,7 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset('/images/2.png', height: 50),
+            Image.asset('assets/images/2.png', height: 50),
             const SizedBox(width: 20),
             Text('Iniciar Sesión', style: Theme.of(context).appBarTheme.titleTextStyle),
           ],
@@ -113,7 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // Logo encima del formulario
-                    Image.asset('/images/logo.png'),
+                    Image.asset('assets/images/logo.png'),
                     const SizedBox(height: 24),
                     Form(
                       key: _formKey,
