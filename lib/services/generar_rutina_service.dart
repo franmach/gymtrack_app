@@ -3,10 +3,15 @@ import 'package:gymtrack_app/models/usuario.dart'; // Ajustar si el path es dife
 import 'package:gymtrack_app/services/ai_service.dart';
 import 'package:gymtrack_app/models/ejercicioAsignado.dart';
 
+// allowedDays ya NO se utiliza; simplemente llamamos al nuevo método.
 class RutinaService {
   static Future<void> generarRutinaDesdePerfil(Usuario usuario) async {
     print('Llamando a Gemini...');
     final ai = AiService();
+
+    final disponibilidad = usuario.disponibilidadSemanal <= 0
+        ? 1
+        : usuario.disponibilidadSemanal;
 
     try {
       final rutinaJson = await ai.generarRutinaComoJson(
@@ -15,7 +20,7 @@ class RutinaService {
         altura: usuario.altura,
         nivel: usuario.nivelExperiencia,
         objetivo: usuario.objetivo,
-        dias: usuario.disponibilidadSemanal,
+        disponibilidadSemanal: disponibilidad,
         minPorSesion: usuario.minPorSesion,
         genero: usuario.genero,
         lesiones: (usuario.lesiones ?? []).join(', '),
@@ -24,23 +29,20 @@ class RutinaService {
 
       final rutinasRef = FirebaseFirestore.instance.collection('rutinas');
 
-      //Desactivar otras rutinas del usuario
       final snapshot = await rutinasRef
           .where('uid', isEqualTo: usuario.uid)
           .where('es_actual', isEqualTo: true)
           .get();
-
       for (final doc in snapshot.docs) {
         await doc.reference.update({'es_actual': false});
       }
 
-      //Agregar la nueva rutina como "actual"
       await rutinasRef.add({
         'uid': usuario.uid,
         'fecha_generacion': DateTime.now().toIso8601String(),
         'objetivo': usuario.objetivo,
         'nivel': usuario.nivelExperiencia,
-        'dias_por_semana': usuario.disponibilidadSemanal,
+        'dias_por_semana': disponibilidad,
         'min_por_sesion': usuario.minPorSesion,
         'es_actual': true,
         'rutina': (rutinaJson['rutina'] as List<dynamic>).map((dia) {
@@ -49,7 +51,7 @@ class RutinaService {
             'ejercicios': (dia['ejercicios'] as List<dynamic>).map((ej) {
               final ejercicio =
                   EjercicioAsignado.fromMap(Map<String, dynamic>.from(ej));
-              return ejercicio.toMap(); // Aquí incluimos peso si lo tiene
+              return ejercicio.toMap();
             }).toList(),
           };
         }).toList(),

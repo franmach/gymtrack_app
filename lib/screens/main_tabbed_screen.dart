@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:gymtrack_app/screens/contenido_edu/educational_advice_screen.dart';
 
 import '../screens/dashboard/dashboard_screen.dart';
 import '../screens/perfil/perfil_screen.dart';
@@ -20,7 +21,7 @@ class _MainTabbedScreenState extends State<MainTabbedScreen> {
   int _currentIndex = 0;
 
   late final List<Widget> _pages;
-  final List<String> _titles = ['Inicio', 'Entrenar', 'Comidas', 'Perfil'];
+  final List<String> _titles = ['Inicio', 'Educativo', 'Entrenar', 'Comidas', 'Perfil'];
 
   @override
   void initState() {
@@ -29,6 +30,7 @@ class _MainTabbedScreenState extends State<MainTabbedScreen> {
 
     _pages = [
       const DashboardScreen(), // Inicio
+      const EducationalAdviceScreen(), // Contenido Educativo
       DaySelectionScreen(
         service: FirestoreRoutineService(),
         userId: uid,
@@ -95,6 +97,11 @@ class _MainTabbedScreenState extends State<MainTabbedScreen> {
                   icon: Icon(Icons.home_outlined),
                   activeIcon: Icon(Icons.home),
                   label: 'Inicio',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.book_online_outlined),
+                  activeIcon: Icon(Icons.book_online),
+                  label: 'Educativo',
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.fitness_center_outlined),

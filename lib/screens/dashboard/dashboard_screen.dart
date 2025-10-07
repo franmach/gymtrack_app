@@ -6,7 +6,9 @@ import 'package:gymtrack_app/screens/historial/historial_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gymtrack_app/main.dart';
 import 'package:gymtrack_app/screens/notificacion/notificaciones_screen.dart';
+import 'package:gymtrack_app/screens/perfil/completar_perfil.dart';
 import 'package:gymtrack_app/screens/perfil/perfil_screen.dart';
+import 'package:gymtrack_app/screens/perfil/perfil_wizard_screen.dart';
 import 'package:gymtrack_app/services/firestore_routine_service.dart';
 import 'package:gymtrack_app/screens/session/day_selection_screen.dart';
 import 'package:gymtrack_app/screens/session/timer_screen.dart';
@@ -18,6 +20,7 @@ import 'package:gymtrack_app/services/ajuste_rutina_service.dart';
 import 'package:gymtrack_app/services/ai_service.dart';
 import 'package:gymtrack_app/services/user_repository.dart';
 import 'dart:math';
+import 'dart:async';
 import 'package:gymtrack_app/services/advice_service.dart';
 import 'package:intl/intl.dart';
 import 'package:gymtrack_app/gymtrack_theme.dart';
@@ -35,6 +38,21 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   final _userRepo = UserRepository();
   final AdviceService _adviceService = AdviceService();
+  bool _profileAutoUpgraded = false;
+
+  bool _heuristicComplete(Map<String, dynamic> u) {
+    bool hasBasics = (u['nombre'] ?? '').toString().isNotEmpty &&
+        (u['apellido'] ?? '').toString().isNotEmpty &&
+        (u['objetivo'] ?? '').toString().isNotEmpty &&
+        (u['nivelExperiencia'] ?? '').toString().isNotEmpty;
+    bool hasMetrics = (u['peso'] ?? 0) is num &&
+        (u['peso'] ?? 0) > 0 &&
+        (u['altura'] ?? 0) is num &&
+        (u['altura'] ?? 0) > 0 &&
+        (u['disponibilidadSemanal'] ?? 0) is num &&
+        (u['disponibilidadSemanal'] ?? 0) > 0;
+    return hasBasics && hasMetrics;
+  }
 
   @override
   void initState() {
@@ -64,10 +82,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _onMenuSelect(String value) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (value == 'profile') {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const PerfilScreen()));
+      Navigator.push(
+          context, MaterialPageRoute(builder: (_) => const PerfilScreen()));
     } else if (value == 'notifications') {
       if (uid == null) return;
-      Navigator.push(context, MaterialPageRoute(builder: (_) => ConfigNotificacionesScreen(usuarioId: uid)));
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => ConfigNotificacionesScreen(usuarioId: uid)));
     } else if (value == 'settings') {
       //Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
     }
@@ -106,19 +128,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
               return const CircularProgressIndicator();
             }
             if (userSnap.hasError) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('Error usuario: ${userSnap.error}'),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                      onPressed: () => setState(() {}),
-                      child: const Text('Reintentar'))
-                ],
-              );
+              return Text('Error usuario: ${userSnap.error}');
+            }
+            final usuarioDoc = userSnap.data?.data() ?? {};
+            final bool perfilCompletoFlag =
+                (usuarioDoc['perfilCompleto'] ?? false) == true;
+            final bool perfilCompleto =
+                perfilCompletoFlag || _heuristicComplete(usuarioDoc);
+
+            // Si la heurística dice que está completo pero el flag no está marcado, actualizamos una sola vez
+            if (perfilCompleto &&
+                !perfilCompletoFlag &&
+                !_profileAutoUpgraded) {
+              _profileAutoUpgraded = true;
+              FirebaseFirestore.instance
+                  .collection('usuarios')
+                  .doc(uid)
+                  .update({'perfilCompleto': true}).catchError((_) {});
             }
 
-            final Map<String, dynamic> usuarioDoc = userSnap.data?.data() ?? {};
             final displayName =
                 (usuarioDoc['nombre'] ?? usuarioDoc['displayName'])
                         ?.toString() ??
@@ -139,21 +167,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 if (rutSnap.connectionState == ConnectionState.waiting) {
                   return const CircularProgressIndicator();
                 }
-                if (rutSnap.hasError) {
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('Error rutinas: ${rutSnap.error}'),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                          onPressed: () => setState(() {}),
-                          child: const Text('Reintentar'))
-                    ],
-                  );
-                }
-
-                final Map<String, dynamic> rutinasDoc =
-                    rutSnap.data?.data() ?? {};
+                final rutinasDoc = rutSnap.data?.data() ?? {};
 
                 // Lógica próximo entrenamiento (sin cambios)
                 String nextName = 'Sin rutina';
@@ -213,6 +227,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   }
                 }
 
+                if (!perfilCompleto) {
+                  // Vista SIN scroll que ocupa todo el alto disponible
+                  return _buildIncompleteDashboard(
+                    displayName: displayName,
+                    uid: uid,
+                  );
+                }
+                // Vista con perfil completo (puede scrollear si hace falta)
                 return SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -223,11 +245,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           CircleAvatar(
                             radius: 30,
                             child: Text(
-                                displayName
-                                    .toString()
-                                    .substring(0, 1)
-                                    .toUpperCase(),
-                                style: const TextStyle(fontSize: 24)),
+                              displayName.substring(0, 1).toUpperCase(),
+                              style: const TextStyle(fontSize: 24),
+                            ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -235,41 +255,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text('Hola, $displayName',
-                                    style: const TextStyle(
-                                        fontSize: 18,
+                                    style: TextStyle(
+                                        fontSize: 30,
                                         fontWeight: FontWeight.bold)),
-                                const SizedBox(height: 4),
-                                const Text('A por tu objetivo de hoy',
+                                SizedBox(height: 4),
+                                Text('A por tu objetivo de hoy',
                                     style: TextStyle(color: Colors.grey)),
                               ],
                             ),
                           ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              const SizedBox(height: 4),
-                              Chip(
-                                  label: Text('$streak'),
-                                  avatar: const Icon(Icons.whatshot_outlined)),
-                            ],
-                          )
+                          Chip(
+                            label: Text('$streak'),
+                            avatar: const Icon(Icons.whatshot_outlined),
+                          ),
                         ],
                       ),
-
                       const SizedBox(height: 16),
-
                       Card(
                         elevation: 2,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                         child: Padding(
                           padding: const EdgeInsets.all(12),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text('Próximo entrenamiento',
-                                  style:
-                                      TextStyle(fontWeight: FontWeight.bold)),
+                                  style: TextStyle(fontWeight: FontWeight.bold)),
                               const SizedBox(height: 8),
                               Text('$nextName • $nextWhen'),
                               const SizedBox(height: 12),
@@ -285,10 +298,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           rutinasDoc['dias_porsemana'] ??
                                           rutinasDoc['dias'] ??
                                           0;
-                                  final int diasPorSemana = (diasPorSemanaRaw
-                                          is num)
-                                      ? diasPorSemanaRaw.toInt()
-                                      : int.tryParse('$diasPorSemanaRaw') ?? 0;
+                                  final int diasPorSemana =
+                                      (diasPorSemanaRaw is num)
+                                          ? diasPorSemanaRaw.toInt()
+                                          : int.tryParse(
+                                                  '$diasPorSemanaRaw') ??
+                                              0;
                                   double progress = 0.0;
                                   if (diasPorSemana > 0) {
                                     final double expectedSessions =
@@ -296,19 +311,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     progress =
                                         (asistenciasLast30 / expectedSessions)
                                             .clamp(0.0, 1.0);
-                                  } else {
-                                    final progRaw = rutinasDoc['progreso'] ??
-                                        usuarioDoc['progreso'] ??
-                                        rutinasDoc['progress'] ??
-                                        usuarioDoc['progress'];
-                                    if (progRaw is num) {
-                                      progress = progRaw.toDouble() > 1
-                                          ? (progRaw.toDouble() / 100)
-                                              .clamp(0.0, 1.0)
-                                          : progRaw.toDouble();
-                                    } else if (progRaw is String)
-                                      progress =
-                                          double.tryParse(progRaw) ?? 0.0;
                                   }
                                   final percent = (progress * 100).round();
                                   return Column(
@@ -344,79 +346,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         ),
                       ),
-
-                      const SizedBox(height: 20),
-
-                      // Recuadro central: contenido educativo
-
-                      GridView.count(
-                        crossAxisCount: 2,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        mainAxisSpacing: 12,
-                        crossAxisSpacing: 12,
-                        childAspectRatio: 3.2,
-                        children: [
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.play_arrow),
-                            label: const Text('Iniciar'),
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => DaySelectionScreen(
-                                    service: FirestoreRoutineService(),
-                                    userId: uid,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.auto_fix_high),
-                            label: const Text('Ajuste AI'),
-                            onPressed: () async {
-                              final firestore = FirebaseFirestore.instance;
-                              final ai = AiService();
-                              final uid =
-                                  FirebaseAuth.instance.currentUser?.uid;
-                              if (uid == null) return;
-                              final userDoc = await firestore
-                                  .collection('usuarios')
-                                  .doc(uid)
-                                  .get();
-                              if (!userDoc.exists) return;
-                              final usuario =
-                                  Usuario.fromMap(userDoc.data()!, uid);
-                              final ajusteService = AjusteRutinaService(
-                                  firestore: firestore, aiService: ai);
-                              try {
-                                await ajusteService
-                                    .ajustarRutinaMensual(usuario);
-                              } catch (e) {
-                                debugPrint('Error ajuste: $e');
-                              }
-                            },
-                          ),
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.history),
-                            label: const Text('Historial'),
-                            onPressed: () {
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) => HistorialScreen()));
-                            },
-                          ),
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.timer),
-                            label: const Text('Temporizador'),
-                            onPressed: () {
-                              Navigator.of(context).push(MaterialPageRoute(
-                                  builder: (_) => const TimerScreen()));
-                            },
-                          ),
-                        ],
-                      ),
+                      const SizedBox(height: 16),
+                      _buildButtons(true, uid),
                       const SizedBox(height: 20),
                       EducationCard(uid: uid, adviceService: _adviceService),
                       const SizedBox(height: 20),
@@ -426,6 +357,192 @@ class _DashboardScreenState extends State<DashboardScreen> {
               },
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildButtons(bool perfilCompleto, String uid) {
+    if (!perfilCompleto) {
+      final carouselHeight = MediaQuery.of(context).size.height * 0.45;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.add_circle_outline, size: 40),
+              label: const Text(
+                'Completar perfil',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 34),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(22),
+                ),
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PerfilWizardScreen(uid: uid),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 18),
+          _BenefitCarousel(
+            height: carouselHeight,
+            items: const [
+              'Rutinas personalizadas según tus datos',
+              'Gráficos claros de tu progreso',
+              'Ajustes automáticos con IA',
+              'Historial completo de entrenamientos',
+              'Rachas y motivación gamificada',
+              'Próximos: desafíos y ranking',
+            ],
+          ),
+        ],
+      );
+    }
+
+    // Vista cuando el perfil YA está completo (grid original mejorado)
+    final buttons = <Widget>[
+      ElevatedButton.icon(
+        icon: const Icon(Icons.play_arrow),
+        label: const Text('Iniciar'),
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => DaySelectionScreen(
+                service: FirestoreRoutineService(),
+                userId: uid,
+              ),
+            ),
+          );
+        },
+      ),
+      ElevatedButton.icon(
+        icon: const Icon(Icons.auto_fix_high),
+        label: const Text('Ajuste AI'),
+        onPressed: () async {
+          final firestore = FirebaseFirestore.instance;
+          final current = FirebaseAuth.instance.currentUser?.uid;
+          if (current == null) return;
+          final userDoc =
+              await firestore.collection('usuarios').doc(current).get();
+          if (!userDoc.exists) return;
+          final usuario = Usuario.fromMap(userDoc.data()!, current);
+          final ajusteService =
+              AjusteRutinaService(firestore: firestore, aiService: AiService());
+          try {
+            await ajusteService.ajustarRutinaMensual(usuario);
+          } catch (e) {
+            debugPrint('Error ajuste: $e');
+          }
+        },
+      ),
+      ElevatedButton.icon(
+        icon: const Icon(Icons.history),
+        label: const Text('Historial'),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => HistorialScreen()),
+          );
+        },
+      ),
+      ElevatedButton.icon(
+        icon: const Icon(Icons.timer),
+        label: const Text('Temporizador'),
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const TimerScreen()),
+          );
+        },
+      ),
+    ];
+
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 3.0,
+      children: buttons,
+    );
+  }
+
+  Widget _buildIncompleteDashboard({
+    required String displayName,
+    required String uid,
+  }) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16,16,16,8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Bienvenido, $displayName',
+              style: const TextStyle(
+                fontSize: 40,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Completa tu perfil para crear tu plan de entrenamiento personalizado.',
+              style: TextStyle(color: Colors.grey, fontSize: 18),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Solo te tomará un minuto.',
+              style: TextStyle(color: Colors.grey, fontSize: 15),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.add_circle_outline, size: 42),
+                label: const Text(
+                  'Completar perfil',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 30),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PerfilWizardScreen(uid: uid),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+            // El carrusel ocupa todo el resto sin overflow
+            Expanded(
+              child: _BenefitCarousel(
+                items: const [
+                  'Rutinas personalizadas según tus datos',
+                  'Gráficos claros de tu progreso',
+                  'Ajustes automáticos con IA',
+                  'Historial completo de entrenamientos',
+                  'Rachas y motivación gamificada',
+                  'Próximos: desafíos y ranking',
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -569,6 +686,133 @@ class _EducationCardState extends State<EducationCard> {
           ],
         ),
       ),
+    );
+  }
+}
+
+// Carrusel de beneficios (solo se usa con perfil incompleto)
+class _BenefitCarousel extends StatefulWidget {
+  final List<String> items;
+  final double? height; // opcional (si se pasa, fuerza alto)
+  const _BenefitCarousel({super.key, required this.items, this.height});
+
+  @override
+  State<_BenefitCarousel> createState() => _BenefitCarouselState();
+}
+
+class _BenefitCarouselState extends State<_BenefitCarousel> {
+  final _controller = PageController(viewportFraction: 0.9);
+  int _index = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (!mounted) return;
+      _index = (_index + 1) % widget.items.length;
+      _controller.animateToPage(
+        _index,
+        duration: const Duration(milliseconds: 700),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dotBase = Colors.white;
+    return LayoutBuilder(
+      builder: (ctx, constraints) {
+        // Alto disponible (resta espacio para dots)
+        final total = widget.height ?? constraints.maxHeight;
+        final pagerHeight = (total - 34).clamp(140.0, total);
+        return Column(
+          children: [
+            SizedBox(
+              height: pagerHeight,
+              child: PageView.builder(
+                controller: _controller,
+                onPageChanged: (i) => setState(() => _index = i),
+                itemCount: widget.items.length,
+                itemBuilder: (ctx, i) {
+                  final active = i == _index;
+                  return AnimatedScale(
+                    duration: const Duration(milliseconds: 300),
+                    scale: active ? 1.0 : 0.94,
+                    child: AnimatedOpacity(
+                      duration: const Duration(milliseconds: 300),
+                      opacity: active ? 1 : 0.6,
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 6),
+                        padding: const EdgeInsets.all(22),
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: Colors.white, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.white.withOpacity(0.35),
+                              blurRadius: 10,
+                              spreadRadius: 0.5,
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            widget.items[i],
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(widget.items.length, (i) {
+                final active = i == _index;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  margin: const EdgeInsets.symmetric(horizontal: 5),
+                  height: 10,
+                  width: active ? 28 : 10,
+                  decoration: BoxDecoration(
+                    color: active
+                        ? Colors.white
+                        : dotBase.withOpacity(0.35),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: active
+                        ? [
+                            BoxShadow(
+                              color: Colors.white.withOpacity(0.7),
+                              blurRadius: 6,
+                              spreadRadius: 0.5,
+                            )
+                          ]
+                        : [],
+                  ),
+                );
+              }),
+            ),
+          ],
+        );
+      },
     );
   }
 }
