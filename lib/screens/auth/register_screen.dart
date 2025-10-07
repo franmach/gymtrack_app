@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gymtrack_app/services/auth_service.dart';
 import 'package:gymtrack_app/models/usuario_basico.dart';
-import 'package:gymtrack_app/screens/perfil/completar_perfil.dart';
-
+import 'package:gymtrack_app/screens/perfil/perfil_wizard_screen.dart';
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -89,7 +88,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => CompletarPerfilScreen(uid: uid)),
+        MaterialPageRoute(builder: (_) => PerfilWizardScreen(uid: uid)),
       );
     } catch (e) {
       final errorMsg = e.toString().replaceAll('Exception: ', '');

@@ -123,4 +123,26 @@ class RutinaService {
 
     print('✅ Rutina ajustada guardada correctamente');
   }
+
+  // Lee el usuario desde Firestore y reutiliza la lógica de generación
+  static Future<void> generarRutinaParaUsuario(String uid) async {
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(uid)
+          .get();
+
+      if (!snap.exists || snap.data() == null) {
+        throw Exception('Usuario no encontrado');
+      }
+
+      // Ajusta si tu factory/constructor difiere
+      final usuario = Usuario.fromMap(snap.data()!, uid);
+
+      await generarRutinaDesdePerfil(usuario);
+    } catch (e) {
+      print('RutinaService.generarRutinaParaUsuario error: $e');
+      rethrow;
+    }
+  }
 }

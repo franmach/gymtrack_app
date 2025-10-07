@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:gymtrack_app/screens/dashboard/dashboard_screen.dart';
-import 'package:gymtrack_app/screens/perfil/perfil_screen.dart';
+import 'package:gymtrack_app/screens/main_tabbed_screen.dart';
 import 'package:provider/provider.dart';
 import '../perfil_wizard_controller.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class StepResumenScreen extends StatelessWidget {
   const StepResumenScreen({super.key});
@@ -20,13 +20,14 @@ class StepResumenScreen extends StatelessWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           _line('Peso', '${d.peso ?? '-'} kg'),
-            _line('Altura', '${d.altura ?? '-'} cm'),
-            _line('Género', d.genero ?? '-'),
-            _line('Nivel', d.nivelExperiencia ?? '-'),
-            _line('Objetivo', d.objetivo ?? '-'),
-            _line('Disponibilidad', '${d.disponibilidad ?? '-'} días/sem'),
-            _line('Duración', '${d.minPorSesion ?? '-'} min'),
-            _line('Lesiones/Limitaciones', (d.textoLesiones?.isNotEmpty ?? false) ? 'Sí' : 'No'),
+          _line('Altura', '${d.altura ?? '-'} cm'),
+          _line('Género', d.genero ?? '-'),
+          _line('Nivel', d.nivelExperiencia ?? '-'),
+          _line('Objetivo', d.objetivo ?? '-'),
+          _line('Disponibilidad', '${d.disponibilidad ?? '-'} días/sem'),
+          _line('Duración', '${d.minPorSesion ?? '-'} min'),
+          _line('Lesiones/Limitaciones',
+              (d.textoLesiones?.isNotEmpty ?? false) ? 'Sí' : 'No'),
           const Spacer(),
           if (ctrl.saving)
             const Center(child: CircularProgressIndicator())
@@ -44,15 +45,18 @@ class StepResumenScreen extends StatelessWidget {
                   onPressed: () async {
                     try {
                       await ctrl.confirmarGuardar();
+
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                              content: Text('Perfil guardado correctamente')),
+                            content: Text('Perfil guardado y rutina generada'),
+                          ),
                         );
-                        Navigator.pushAndRemoveUntil(
-                          context,
+                        // Volver al contenedor con tabs (mantiene el menú inferior)
+                        Navigator.of(context).pushAndRemoveUntil(
                           MaterialPageRoute(
-                              builder: (_) => const DashboardScreen()),
+                            builder: (_) => const MainTabbedScreen(),
+                          ),
                           (r) => false,
                         );
                       }

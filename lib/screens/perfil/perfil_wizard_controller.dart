@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart'; // <-- IMPORT NECESARIO PARA XFile
 import '../../services/ai_service.dart';
+import 'package:gymtrack_app/services/generar_rutina_service.dart';
 
 /// Modelo acumulador en memoria de los datos del perfil
 class PerfilUsuario {
@@ -220,6 +221,13 @@ class PerfilWizardController extends ChangeNotifier {
         'perfilCompleto': true,
         if (data.imagenUrl != null) 'imagen_url': data.imagenUrl,
       });
+
+      // 2) Generar rutina automáticamente (reutiliza la lógica centralizada)
+      try {
+        await RutinaService.generarRutinaParaUsuario(uid);
+      } catch (e) {
+        debugPrint('Generación de rutina falló: $e'); // no bloquear el guardado
+      }
 
       // Limpiar persistencia local (ya completo)
       prefs.delete('perfil_wizard_step_$uid');
