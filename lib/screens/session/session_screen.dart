@@ -357,88 +357,107 @@ class _SesionScreenState extends State<SesionScreen> {
     );
   }
 
+  // Reemplaza TODO el método _buildExerciseCard por este:
   Widget _buildExerciseCard(int i) {
     final e = _exercises[i];
-    // Calcular si el ejercicio está completo/incompleto automáticamente
     final repsRealizadas = int.tryParse(_doneCtrls[i].text) ?? 0;
     final pesoUsado = double.tryParse(_pesoCtrls[i].text) ?? 0;
     final repsPlanificadas = e.series * e.repeticiones;
     final pesoPlanificado = e.peso ?? 0;
-    // Aceptar ≥ para reps y peso (si hay peso planificado)
+
     final isCompleted = repsRealizadas >= repsPlanificadas &&
         (pesoPlanificado == 0 || pesoUsado >= pesoPlanificado);
-    final isIncomplete = !isCompleted && (repsRealizadas > 0 || pesoUsado > 0);
+    final isIncomplete =
+        !isCompleted && (repsRealizadas > 0 || pesoUsado > 0);
+
     _completed[i] = isCompleted;
     _incomplete[i] = isIncomplete;
 
+    final scheme = Theme.of(context).colorScheme;
+
+    // SOLO cambiamos el color del borde según estado
+    Color borderColor;
+    double borderWidth;
+    if (isCompleted) {
+      borderColor = scheme.primary;
+      borderWidth = 2;
+    } else if (isIncomplete) {
+      borderColor = scheme.error;
+      borderWidth = 2;
+    } else {
+      borderColor = Colors.transparent; // <-- invisible
+      borderWidth = 0;
+    }
+    final statusText = isCompleted
+        ? 'Completado ✔'
+        : isIncomplete
+            ? 'Incompleto'
+            : 'Pendiente';
+
+    final statusColor = isCompleted
+        ? scheme.primary
+        : isIncomplete
+            ? scheme.error
+            : scheme.outline;
+
     return Card(
-      color: Colors.black,
       margin: const EdgeInsets.symmetric(vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 4,
-      child: Padding(
+      // Mantenemos el shape sin color de fondo custom
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
         padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          // Fondo por defecto del tema (no lo alteramos)
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: borderColor, width: 2),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(e.nombre,
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineSmall
-                    ?.copyWith(color: Colors.white)),
+            Text(
+              e.nombre,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSurface),
+            ),
             const SizedBox(height: 8),
             Row(
               children: [
                 Icon(Icons.fitness_center,
-                    color: Theme.of(context).primaryColor, size: 22),
+                    color: scheme.primary.withOpacity(.85), size: 20),
                 const SizedBox(width: 6),
-                Text(e.grupoMuscular, style: TextStyle(color: Colors.white)),
+                Text(e.grupoMuscular),
               ],
             ),
             const SizedBox(height: 8),
-            Row(
+            Wrap(
+              spacing: 16,
+              runSpacing: 4,
               children: [
-                Icon(Icons.format_list_numbered,
-                    color: Theme.of(context).primaryColor, size: 22),
-                const SizedBox(width: 6),
-                Text('Series: ${e.series}',
-                    style: TextStyle(color: Colors.white)),
-                const SizedBox(width: 16),
-                Icon(Icons.repeat,
-                    color: Theme.of(context).primaryColor, size: 22),
-                const SizedBox(width: 6),
-                Text('Reps: ${e.repeticiones}',
-                    style: TextStyle(color: Colors.white)),
-                const SizedBox(width: 16),
+                Text('Series: ${e.series}'),
+                Text('Reps: ${e.repeticiones}'),
                 if (e.peso != null && e.peso! > 0)
-                  Row(
-                    children: [
-                      Icon(Icons.fitness_center,
-                          color: Theme.of(context).primaryColor, size: 22),
-                      const SizedBox(width: 6),
-                      Text('Peso recomendado: ${e.peso!.toStringAsFixed(2)} kg',
-                          style: TextStyle(color: Colors.white)),
-                    ],
-                  ),
+                  Text('Peso rec.: ${e.peso!.toStringAsFixed(2)} kg'),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Row(
               children: [
-                Icon(Icons.repeat,
-                    color: Theme.of(context).primaryColor, size: 22),
-                const SizedBox(width: 6),
                 Expanded(
                   child: TextField(
                     controller: _doneCtrls[i],
-                    enabled: true,
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: const InputDecoration(
-                      labelText: 'Rep. totales realizadas',
+                      labelText: 'Reps totales realizadas',
                       isDense: true,
-                      contentPadding:
-                          EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                     ),
                     onChanged: (_) {
                       setState(() {});
@@ -447,83 +466,57 @@ class _SesionScreenState extends State<SesionScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                // Icono y campo solo si hay peso recomendado
-                e.peso != null && e.peso! > 0
-                    ? Icon(Icons.fitness_center,
-                        color: Theme.of(context).primaryColor, size: 22)
-                    : SizedBox.shrink(),
-                e.peso != null && e.peso! > 0
-                    ? const SizedBox(width: 6)
-                    : SizedBox.shrink(),
-                e.peso != null && e.peso! > 0
-                    ? Expanded(
-                        child: TextField(
-                          controller: _pesoCtrls[i],
-                          enabled: true,
-                          keyboardType:
-                              TextInputType.numberWithOptions(decimal: true),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(
-                                RegExp(r'^\d*\.?\d*')),
-                          ],
-                          decoration: const InputDecoration(
-                            labelText: 'Peso usado (kg)',
-                            isDense: true,
-                            contentPadding: EdgeInsets.symmetric(
-                                vertical: 8, horizontal: 12),
-                          ),
-                          style: TextStyle(color: Colors.white),
-                          onChanged: (_) {
-                            setState(() {});
-                            _savePartial();
-                          },
-                        ),
-                      )
-                    : SizedBox.shrink(),
-
-                const SizedBox(width: 12),
-                Column(
-                  children: [
-                    const Text('Completado',
-                        style: TextStyle(color: Colors.white)),
-                    const SizedBox(height: 4),
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.white),
-                        color: isCompleted ? Colors.green : Colors.transparent,
-                        borderRadius: BorderRadius.circular(4),
+                if (e.peso != null && e.peso! > 0)
+                  Expanded(
+                    child: TextField(
+                      controller: _pesoCtrls[i],
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(
+                            RegExp(r'^\d*\.?\d*')),
+                      ],
+                      decoration: const InputDecoration(
+                        labelText: 'Peso usado (kg)',
+                        isDense: true,
                       ),
-                      child: isCompleted
-                          ? const Icon(Icons.check,
-                              size: 20, color: Colors.black)
-                          : null,
+                      onChanged: (_) {
+                        setState(() {});
+                        _savePartial();
+                      },
                     ),
-                  ],
-                ),
-                const SizedBox(width: 8),
-                Column(
-                  children: [
-                    const Text('Incompleto',
-                        style: TextStyle(color: Colors.white)),
-                    const SizedBox(height: 4),
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.white),
-                        color: isIncomplete ? Colors.red : Colors.transparent,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: isIncomplete
-                          ? const Icon(Icons.close,
-                              size: 20, color: Colors.white)
-                          : null,
-                    ),
-                  ],
-                ),
+                  ),
               ],
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: (!isCompleted && !isIncomplete) ? Alignment.center : Alignment.center,
+              child: (!isCompleted && !isIncomplete)
+                  ? Text(
+                      statusText,
+                      style: TextStyle(
+                        color: scheme.outline,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    )
+                  : Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: statusColor.withOpacity(0.10),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: statusColor, width: 1),
+                      ),
+                      child: Text(
+                        statusText,
+                        style: TextStyle(
+                          color: statusColor,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
             ),
           ],
         ),

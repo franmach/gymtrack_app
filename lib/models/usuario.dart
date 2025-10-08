@@ -18,6 +18,7 @@ class Usuario {
   final DateTime fechaRegistro;
   final String? gimnasioId;
   final DateTime? ultimaAsistencia;
+  final bool perfilCompleto;
 
   Usuario({
     required this.uid,
@@ -36,7 +37,8 @@ class Usuario {
     required this.rol,
     required this.fechaRegistro,
     this.gimnasioId,
-    this.ultimaAsistencia,
+    this.ultimaAsistencia,  
+    this.perfilCompleto = false,
   });
 
   factory Usuario.fromMap(Map<String, dynamic> data, String uid) {
@@ -68,6 +70,7 @@ class Usuario {
           : data['ultimaAsistencia'] is String
               ? DateTime.tryParse(data['ultimaAsistencia'])
               : null,
+      perfilCompleto: data['perfilCompleto'] ?? false,
     );
   }
 
@@ -92,6 +95,8 @@ class Usuario {
       'ultimaAsistencia': ultimaAsistencia != null
           ? Timestamp.fromDate(ultimaAsistencia!)
           : null,
+
+      'perfilCompleto': perfilCompleto,
     };
   }
 }
