@@ -1,8 +1,10 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import '../../gymtrack_theme.dart';
+import '../chart_helpers.dart';
 
 class GraficoVolumen extends StatelessWidget {
-  final List<String> etiquetas; // Ej: ['Lun', 'Mar', 'Mié', ...]
+  final List<String> etiquetas; // Ej: ['2025-01-01', ...]
   final List<double> datos;     // Ej: [1500, 1800, 2000, ...]
   final String titulo;
   final bool animado;
@@ -17,90 +19,83 @@ class GraficoVolumen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double maxY = datos.isNotEmpty
-        ? (datos.reduce((a, b) => a > b ? a : b) * 1.2)
-        : 0;
+    final sampled = 12;
+    final sEtiquetas = sampleSeries(etiquetas, sampled);
+    final sDatos = sampleSeries(datos, sampled);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (titulo.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: Text(
-              titulo,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ),
-        SizedBox(
-          height: 250,
-          child: BarChart(
-            BarChartData(
-              maxY: maxY,
-              barGroups: List.generate(etiquetas.length, (i) {
-                return BarChartGroupData(
-                  x: i,
-                  barRods: [
-                    BarChartRodData(
-                      toY: datos[i],
-                      color: Colors.blueAccent,
-                      width: 18,
-                      borderRadius: BorderRadius.circular(4),
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.blueAccent,
-                          Colors.lightBlueAccent.withOpacity(0.7),
-                        ],
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
+    final double maxY = sDatos.isNotEmpty ? (sDatos.reduce((a, b) => a > b ? a : b) * 1.2) : 0;
+    final many = sEtiquetas.length > 10;
+
+    return Card(
+      color: Colors.black,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (titulo.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Text(titulo, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: blanco)),
+              ),
+            SizedBox(
+              height: 250,
+              child: BarChart(
+                BarChartData(
+                  maxY: maxY > 0 ? maxY : 1,
+                  barGroups: List.generate(sEtiquetas.length, (i) {
+                    return BarChartGroupData(
+                      x: i,
+                      barRods: [
+                        BarChartRodData(
+                          toY: sDatos[i],
+                          color: verdeFluor.withOpacity(0.9),
+                          width: 14,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ],
+                    );
+                  }),
+                  titlesData: FlTitlesData(
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 36,
+                        getTitlesWidget: (value, meta) {
+                          if (value % (maxY > 0 ? (maxY / 4).round() : 1) == 0) {
+                            return Text(value.toInt().toString(), style: const TextStyle(fontSize: 10, color: blanco));
+                          }
+                          return const SizedBox.shrink();
+                        },
                       ),
                     ),
-                  ],
-                );
-              }),
-              titlesData: FlTitlesData(
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 28,
-                    getTitlesWidget: (value, meta) {
-                      if (value % 1 == 0) {
-                        return Text(
-                          value.toInt().toString(),
-                          style: const TextStyle(fontSize: 10),
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          final index = value.toInt();
+                          if (index >= 0 && index < sEtiquetas.length) {
+                            final lbl = compactLabel(sEtiquetas[index], short: many);
+                            return Transform.rotate(angle: many ? -0.6 : 0, child: Text(lbl, style: const TextStyle(fontSize: 10, color: blanco)));
+                          }
+                          return const SizedBox.shrink();
+                        },
+                        reservedSize: 40,
+                      ),
+                    ),
+                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   ),
+                  gridData: FlGridData(show: true, drawVerticalLine: false, getDrawingHorizontalLine: (_) => FlLine(color: grisClaro.withOpacity(0.12))),
+                  borderData: FlBorderData(show: false),
                 ),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (value, meta) {
-                      final index = value.toInt();
-                      if (index >= 0 && index < etiquetas.length) {
-                        return Text(
-                          etiquetas[index],
-                          style: const TextStyle(fontSize: 10),
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                    reservedSize: 32,
-                  ),
-                ),
-                rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                swapAnimationDuration: animado ? const Duration(milliseconds: 600) : Duration.zero,
               ),
-              gridData: FlGridData(show: true, drawVerticalLine: false),
-              borderData: FlBorderData(show: false),
             ),
-            swapAnimationDuration:
-                animado ? const Duration(milliseconds: 800) : Duration.zero,
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
