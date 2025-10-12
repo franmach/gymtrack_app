@@ -3,16 +3,12 @@ import 'package:gymtrack_app/models/usuario.dart'; // Ajustar si el path es dife
 import 'package:gymtrack_app/services/ai_service.dart';
 import 'package:gymtrack_app/models/ejercicioAsignado.dart';
 
-// allowedDays ya NO se utiliza; simplemente llamamos al nuevo método.
 class RutinaService {
   static Future<void> generarRutinaDesdePerfil(Usuario usuario) async {
-    print('Llamando a Gemini...');
     final ai = AiService();
-
     final disponibilidad = usuario.disponibilidadSemanal <= 0
         ? 1
         : usuario.disponibilidadSemanal;
-
     try {
       final rutinaJson = await ai.generarRutinaComoJson(
         edad: usuario.edad,
@@ -26,7 +22,6 @@ class RutinaService {
         lesiones: (usuario.lesiones ?? []).join(', '),
         gimnasioId: usuario.gimnasioId,
       );
-
       final rutinasRef = FirebaseFirestore.instance.collection('rutinas');
 
       final snapshot = await rutinasRef
@@ -36,7 +31,6 @@ class RutinaService {
       for (final doc in snapshot.docs) {
         await doc.reference.update({'es_actual': false});
       }
-
       await rutinasRef.add({
         'uid': usuario.uid,
         'fecha_generacion': DateTime.now().toIso8601String(),

@@ -24,7 +24,7 @@ import 'dart:async';
 import 'package:gymtrack_app/services/advice_service.dart';
 import 'package:intl/intl.dart';
 import 'package:gymtrack_app/gymtrack_theme.dart';
-import 'package:gymtrack_app/screens/admin/admin_hub_screen.dart'; 
+import 'package:gymtrack_app/screens/admin/admin_hub_screen.dart';
 
 /// DashboardScreen: Pantalla principal tras iniciar sesión
 typedef DocSnapshot = DocumentSnapshot<Map<String, dynamic>>;
@@ -137,7 +137,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             final bool perfilCompleto =
                 perfilCompletoFlag || _heuristicComplete(usuarioDoc);
 
-            // Si la heurística dice que está completo pero el flag no está marcado, actualizamos una sola vez
             if (perfilCompleto &&
                 !perfilCompletoFlag &&
                 !_profileAutoUpgraded) {
@@ -147,7 +146,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   .doc(uid)
                   .update({'perfilCompleto': true}).catchError((_) {});
             }
-
             final displayName =
                 (usuarioDoc['nombre'] ?? usuarioDoc['displayName'])
                         ?.toString() ??
@@ -283,7 +281,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text('Próximo entrenamiento',
-                                  style: TextStyle(fontWeight: FontWeight.bold)),
+                                  style:
+                                      TextStyle(fontWeight: FontWeight.bold)),
                               const SizedBox(height: 8),
                               Text('$nextName • $nextWhen'),
                               const SizedBox(height: 12),
@@ -299,12 +298,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           rutinasDoc['dias_porsemana'] ??
                                           rutinasDoc['dias'] ??
                                           0;
-                                  final int diasPorSemana =
-                                      (diasPorSemanaRaw is num)
-                                          ? diasPorSemanaRaw.toInt()
-                                          : int.tryParse(
-                                                  '$diasPorSemanaRaw') ??
-                                              0;
+                                  final int diasPorSemana = (diasPorSemanaRaw
+                                          is num)
+                                      ? diasPorSemanaRaw.toInt()
+                                      : int.tryParse('$diasPorSemanaRaw') ?? 0;
                                   double progress = 0.0;
                                   if (diasPorSemana > 0) {
                                     final double expectedSessions =
@@ -349,90 +346,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       const SizedBox(height: 16),
                       _buildButtons(true, uid),
-
-
-                      const SizedBox(height: 20),
-
-                      // Recuadro central: contenido educativo
-
-                      GridView.count(
-                        crossAxisCount: 2,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        mainAxisSpacing: 12,
-                        crossAxisSpacing: 12,
-                        childAspectRatio: 3.2,
-                        children: [
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.play_arrow),
-                            label: const Text('Iniciar'),
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => DaySelectionScreen(
-                                    service: FirestoreRoutineService(),
-                                    userId: uid,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.auto_fix_high),
-                            label: const Text('Ajuste AI'),
-                            onPressed: () async {
-                              final firestore = FirebaseFirestore.instance;
-                              final ai = AiService();
-                              final uid =
-                                  FirebaseAuth.instance.currentUser?.uid;
-                              if (uid == null) return;
-                              final userDoc = await firestore
-                                  .collection('usuarios')
-                                  .doc(uid)
-                                  .get();
-                              if (!userDoc.exists) return;
-                              final usuario =
-                                  Usuario.fromMap(userDoc.data()!, uid);
-                              final ajusteService = AjusteRutinaService(
-                                  firestore: firestore, aiService: ai);
-                              try {
-                                await ajusteService
-                                    .ajustarRutinaMensual(usuario);
-                              } catch (e) {
-                                debugPrint('Error ajuste: $e');
-                              }
-                            },
-                          ),
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.history),
-                            label: const Text('Historial'),
-                            onPressed: () {
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) => HistorialScreen()));
-                            },
-                          ),
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.timer),
-                            label: const Text('Temporizador'),
-                            onPressed: () {
-                              Navigator.of(context).push(MaterialPageRoute(
-                                  builder: (_) => const TimerScreen()));
-                            },
-                          ),
-
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.admin_panel_settings),
-                            label: const Text('Panel Administrador'),
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const AdminHubScreen()),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
                       const SizedBox(height: 20),
                       EducationCard(uid: uid, adviceService: _adviceService),
                       const SizedBox(height: 20),
@@ -548,6 +461,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
           );
         },
       ),
+      ElevatedButton.icon(
+        icon: const Icon(Icons.admin_panel_settings),
+        label: const Text('Panel Administrador'),
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const AdminHubScreen()),
+          );
+        },
+      ),
     ];
 
     return GridView.count(
@@ -567,7 +489,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }) {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16,16,16,8),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -878,9 +800,7 @@ class _BenefitCarouselState extends State<_BenefitCarousel> {
                   height: 10,
                   width: active ? 28 : 10,
                   decoration: BoxDecoration(
-                    color: active
-                        ? Colors.white
-                        : dotBase.withOpacity(0.35),
+                    color: active ? Colors.white : dotBase.withOpacity(0.35),
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: active
                         ? [
