@@ -12,14 +12,8 @@ class GamificationService {
   Future<void> onSesionCompletada(String uid, DateTime ahoraLocal,
       {required String sesionId}) async {
     await repo.initStatsIfMissing(uid);
-
-    // Idempotencia: si ya existe asistencia de hoy, salir
     if (await repo.existeAsistenciaDelDia(uid, ahoraLocal)) return;
-
-    // Crear asistencia del día
     await repo.crearAsistenciaDelDia(uid, ahoraLocal);
-
-    // Leer stats actuales
     final statsSnap = await repo.refUsuarios.doc(uid).get();
     final stats = statsSnap.data();
     final rachaResult = calcularRacha(
@@ -28,19 +22,13 @@ class GamificationService {
       rachaActual: stats?.rachaActual ?? 0,
     );
     final nuevaRacha = rachaResult.nuevaRacha;
-
-    // Actualizar racha, récord y ultimaAsistencia
     await repo.actualizarRachaYRecord(
       uid,
       nuevaRacha: nuevaRacha,
       hoy: ahoraLocal,
       actualizarUltima: true,
     );
-
-    // Sumar puntos diarios
     await repo.incrementarPuntos(uid, 10);
-
-    // Verificar hitos de racha
     if ([7, 14, 30].contains(nuevaRacha)) {
       final badge = nuevaRacha == 7
           ? 'assets/badges/racha_bronce.png'
@@ -62,7 +50,7 @@ class GamificationService {
         tipo: 'racha',
         periodo: null,
         otorgadoEn: ahoraLocal,
-        badge: badge, // <-- Aquí agregas la imagen
+        badge: badge, 
       );
       await repo.otorgarLogro(uid, logro);
       await repo.incrementarPuntos(uid, puntosBadge);
