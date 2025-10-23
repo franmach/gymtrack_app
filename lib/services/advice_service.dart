@@ -108,7 +108,7 @@ class AdviceService {
       throw Exception('GEMINI_API_KEY no configurada en .env');
     }
 
-    final model = GenerativeModel(model: 'gemini-1.5-flash', apiKey: geminiKey);
+    final model = GenerativeModel(model: 'gemini-2.5-flash', apiKey: geminiKey);
 
     final response = await model.generateContent([Content.text(prompt)]);
     final rawText = response.text ?? '';
