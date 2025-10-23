@@ -18,26 +18,17 @@ import 'screens/auth/login_screen.dart';
 import 'screens/perfil/perfil_screen.dart';
 import 'package:gymtrack_app/services/offline_service.dart';
 
-// ------------------ MAIN ------------------
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await dotenv.load(fileName: ".env");
-
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
   tz.initializeTimeZones();
   tz.setLocalLocation(tz.getLocation('America/Montevideo'));
-
   await Hive.initFlutter();
   await Hive.openBox('gt_reminders');
   await Hive.openBox('gt_prefs');
-
-  // 🔹 Inicializamos el servicio offline (box para rutinas)
-  await OfflineService.init();
-
   AwesomeNotifications().initialize(
     null,
     [
@@ -53,7 +44,6 @@ Future<void> main() async {
     ],
     debug: true,
   );
-
   bool isAllowed = await AwesomeNotifications().isNotificationAllowed();
   if (!isAllowed) {
     await AwesomeNotifications().requestPermissionToSendNotifications();

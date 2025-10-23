@@ -205,7 +205,6 @@ class _SesionScreenState extends State<SesionScreen> {
       final conn = await Connectivity().checkConnectivity();
       if (conn == ConnectivityResult.none) {
         final pending = _prefs.getStringList('pending_sessions') ?? [];
-        // Asegurarnos de usar el UID actual del usuario autenticado
         final currentUid = FirebaseAuth.instance.currentUser?.uid;
         if (currentUid == null) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -219,7 +218,6 @@ class _SesionScreenState extends State<SesionScreen> {
           'uid': currentUid, // <-- usar UID seguro aquí
           'day': widget.day,
           'date': Timestamp.now(),
-          // guardar duración en minutos (redondeo hacia arriba si hay segundos)
           'duracionMin': _stopwatch.elapsed.inSeconds == 0 ? 0 : ((_stopwatch.elapsed.inSeconds + 59) ~/ 60),
           'comentario_general': _comentarioGeneralCtrl.text.trim(),
           'exercises': List.generate(_exercises.length, (i) {
@@ -238,7 +236,6 @@ class _SesionScreenState extends State<SesionScreen> {
             };
           }),
         };
-
         pending.add(json.encode(doc));
         await _prefs.setStringList('pending_sessions', pending);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -249,7 +246,6 @@ class _SesionScreenState extends State<SesionScreen> {
         });
         return;
       } else {
-        // incluir duracionMin también en el documento en línea
         final docToSave = {
           ...doc,
           'duracionMin': _stopwatch.elapsed.inSeconds == 0 ? 0 : ((_stopwatch.elapsed.inSeconds + 59) ~/ 60),
@@ -260,20 +256,19 @@ class _SesionScreenState extends State<SesionScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Sesión guardada exitosamente')),
         );
-        // --- INTEGRACIÓN GAMIFICACIÓN ---
         final gamificationRepo = GamificationRepository(
             FirebaseFirestore.instance, FirebaseAuth.instance);
         final gamificationService = GamificationService(gamificationRepo);
         await gamificationService.onSesionCompletada(
             widget.userId, DateTime.now(),
             sesionId: sesionId);
-        // --- FIN INTEGRACIÓN ---
       }
-
       await _prefs.remove(_localKey);
       Navigator.of(context).pop();
     } catch (e) {
-      // maneja errores si quieres
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al guardar la sesión: $e')),
+      );
       rethrow;
     } finally {
       if (mounted) setState(() => _guardando = false);
