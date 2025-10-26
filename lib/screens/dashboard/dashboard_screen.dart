@@ -26,6 +26,10 @@ import 'package:intl/intl.dart';
 import 'package:gymtrack_app/gymtrack_theme.dart';
 import 'package:gymtrack_app/screens/admin/admin_hub_screen.dart';
 
+// ✅ Nuevos imports para el chatbot
+import 'package:gymtrack_app/screens/chatbot/chatbot_screen.dart';
+import 'package:gymtrack_app/services/chatbot/gemini_chat_service.dart';
+
 /// DashboardScreen: Pantalla principal tras iniciar sesión
 typedef DocSnapshot = DocumentSnapshot<Map<String, dynamic>>;
 
@@ -233,6 +237,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     uid: uid,
                   );
                 }
+
+                // ✅ Contexto del usuario para el chatbot (desde usuarios/{uid})
+                final userContext = {
+                  'nombre': usuarioDoc['nombre'] ?? displayName,
+                  'edad': usuarioDoc['edad'] ?? '',
+                  'peso': usuarioDoc['peso'] ?? '',
+                  'altura': usuarioDoc['altura'] ?? '',
+                  'genero': usuarioDoc['genero'] ?? '',
+                  'nivel': usuarioDoc['nivelExperiencia'] ?? '',
+                  'objetivo': usuarioDoc['objetivo'] ?? '',
+                  'lesiones': usuarioDoc['lesiones'] ?? 'Ninguna',
+                };
+
                 // Vista con perfil completo (puede scrollear si hace falta)
                 return SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
@@ -252,8 +269,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Hola, $displayName',
+                              children: const [
+                                Text('Hola, Usuario',
                                     style: TextStyle(
                                         fontSize: 30,
                                         fontWeight: FontWeight.bold)),
@@ -298,10 +315,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           rutinasDoc['dias_porsemana'] ??
                                           rutinasDoc['dias'] ??
                                           0;
-                                  final int diasPorSemana = (diasPorSemanaRaw
-                                          is num)
-                                      ? diasPorSemanaRaw.toInt()
-                                      : int.tryParse('$diasPorSemanaRaw') ?? 0;
+                                  final int diasPorSemana =
+                                      (diasPorSemanaRaw is num)
+                                          ? diasPorSemanaRaw.toInt()
+                                          : int.tryParse(
+                                                  '$diasPorSemanaRaw') ??
+                                              0;
                                   double progress = 0.0;
                                   if (diasPorSemana > 0) {
                                     final double expectedSessions =
@@ -345,7 +364,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      _buildButtons(true, uid),
+                      _buildButtons(true, uid, userContext),
                       const SizedBox(height: 20),
                       EducationCard(uid: uid, adviceService: _adviceService),
                       const SizedBox(height: 20),
@@ -360,7 +379,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildButtons(bool perfilCompleto, String uid) {
+  // 🔹 Agregamos userContext como parámetro y el botón del Chatbot al grid
+  Widget _buildButtons(
+      bool perfilCompleto, String uid, Map<String, dynamic> userContext) {
     if (!perfilCompleto) {
       final carouselHeight = MediaQuery.of(context).size.height * 0.45;
       return Column(
@@ -422,24 +443,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
           );
         },
       ),
+      // ✅ Nuevo: Chatbot Interactivo (Gemini + contexto)
       ElevatedButton.icon(
-        icon: const Icon(Icons.auto_fix_high),
-        label: const Text('Ajuste AI'),
-        onPressed: () async {
-          final firestore = FirebaseFirestore.instance;
-          final current = FirebaseAuth.instance.currentUser?.uid;
-          if (current == null) return;
-          final userDoc =
-              await firestore.collection('usuarios').doc(current).get();
-          if (!userDoc.exists) return;
-          final usuario = Usuario.fromMap(userDoc.data()!, current);
-          final ajusteService =
-              AjusteRutinaService(firestore: firestore, aiService: AiService());
-          try {
-            await ajusteService.ajustarRutinaMensual(usuario);
-          } catch (e) {
-            debugPrint('Error ajuste: $e');
-          }
+        icon: const Icon(Icons.chat_bubble_outline),
+        label: const Text('Chatbot Interactivo'),
+        onPressed: () {
+          final chatService = GeminiChatService();
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => ChatbotScreen(
+                chat: chatService,
+                userContext: userContext,
+              ),
+            ),
+          );
         },
       ),
       ElevatedButton.icon(
@@ -448,7 +465,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => HistorialScreen()),
+            MaterialPageRoute(builder: (_) => const HistorialScreen()),
           );
         },
       ),
@@ -556,6 +573,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
+// ========================
+// EducationCard (tu versión original)
+// ========================
 class EducationCard extends StatefulWidget {
   final String uid;
   final AdviceService adviceService;
@@ -668,7 +688,6 @@ class _EducationCardState extends State<EducationCard> {
                               icon: const Icon(Icons.refresh, color: blanco),
                               tooltip: 'Otro consejo',
                               onPressed: () {
-                                // sólo recarga esta card
                                 setState(() => _loadAdvice());
                               },
                             ),
@@ -697,7 +716,9 @@ class _EducationCardState extends State<EducationCard> {
   }
 }
 
-// Carrusel de beneficios (solo se usa con perfil incompleto)
+// ========================
+// Carrusel de beneficios (tu versión original)
+// ========================
 class _BenefitCarousel extends StatefulWidget {
   final List<String> items;
   final double? height; // opcional (si se pasa, fuerza alto)
@@ -738,7 +759,6 @@ class _BenefitCarouselState extends State<_BenefitCarousel> {
     final dotBase = Colors.white;
     return LayoutBuilder(
       builder: (ctx, constraints) {
-        // Alto disponible (resta espacio para dots)
         final total = widget.height ?? constraints.maxHeight;
         final pagerHeight = (total - 34).clamp(140.0, total);
         return Column(
