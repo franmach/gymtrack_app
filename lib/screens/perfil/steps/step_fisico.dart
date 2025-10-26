@@ -76,7 +76,7 @@ class _StepFisicoScreenState extends State<StepFisicoScreen> {
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               value: _genero,
-              decoration: const InputDecoration(labelText: 'Género'),
+              decoration: InputDecoration(labelText: 'Género'),
               items: const [
                 DropdownMenuItem(value: 'Masculino', child: Text('Masculino')),
                 DropdownMenuItem(value: 'Femenino', child: Text('Femenino')),
