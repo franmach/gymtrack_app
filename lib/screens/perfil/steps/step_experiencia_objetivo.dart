@@ -52,7 +52,7 @@ class _StepExperienciaObjetivoScreenState
             DropdownButtonFormField<String>(
               value: _nivel,
               decoration:
-                  const InputDecoration(labelText: 'Nivel de experiencia'),
+                   InputDecoration(labelText: 'Nivel de experiencia'),
               items: niveles
                   .map((n) => DropdownMenuItem(value: n, child: Text(n)))
                   .toList(),

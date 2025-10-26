@@ -21,17 +21,18 @@ final ThemeData gymTrackTheme = ThemeData.dark().copyWith(
     error: const Color.fromARGB(255, 255, 17, 0),
     onError: blanco,
   ),
-  useMaterial3: true,
   elevatedButtonTheme: ElevatedButtonThemeData(
     style: ButtonStyle(
       backgroundColor: MaterialStateProperty.resolveWith<Color?>((states) {
-        if (states.contains(MaterialState.pressed) || states.contains(MaterialState.hovered)) {
+        if (states.contains(MaterialState.pressed) ||
+            states.contains(MaterialState.hovered)) {
           return verdeFluor.withOpacity(0.85);
         }
         return verdeFluor;
       }),
       foregroundColor: MaterialStateProperty.resolveWith<Color?>((states) {
-        if (states.contains(MaterialState.pressed) || states.contains(MaterialState.hovered)) {
+        if (states.contains(MaterialState.pressed) ||
+            states.contains(MaterialState.hovered)) {
           return negro;
         }
         return negro;
@@ -80,8 +81,10 @@ final ThemeData gymTrackTheme = ThemeData.dark().copyWith(
     bodyLarge: GoogleFonts.rajdhani(fontSize: 16, color: blanco),
     bodyMedium: GoogleFonts.rajdhani(fontSize: 16, color: blanco),
     labelLarge: GoogleFonts.rajdhani(fontSize: 18, color: blanco),
-    headlineSmall: GoogleFonts.orbitron(fontSize: 24, fontWeight: FontWeight.bold, color: blanco),
-    headlineMedium: GoogleFonts.orbitron(fontSize: 28, fontWeight: FontWeight.bold, color: blanco),
+    headlineSmall: GoogleFonts.orbitron(
+        fontSize: 24, fontWeight: FontWeight.bold, color: blanco),
+    headlineMedium: GoogleFonts.orbitron(
+        fontSize: 28, fontWeight: FontWeight.bold, color: blanco),
   ),
   appBarTheme: AppBarTheme(
     backgroundColor: Colors.transparent,
@@ -92,5 +95,14 @@ final ThemeData gymTrackTheme = ThemeData.dark().copyWith(
       color: blanco,
     ),
     iconTheme: const IconThemeData(color: blanco),
+  ),
+  // Removed dropdownButtonTheme because it's unavailable in the current Flutter SDK;
+  // use dropdownMenuTheme (Material 3) or apply styles directly to DropdownButton widgets.
+  dropdownMenuTheme: DropdownMenuThemeData(
+    menuStyle: const MenuStyle(
+      // Esto aplica sólo a DropdownMenu (M3), no a DropdownButton.
+      // Se deja por compatibilidad si migran a DropdownMenu.
+    ),
+    textStyle: GoogleFonts.rajdhani(color: blanco, fontSize: 16),
   ),
 );
