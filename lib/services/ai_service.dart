@@ -239,7 +239,13 @@ EJEMPLO DE FORMATO (NO copiar literal):
 }
 ''';
 
-    final response = await _model.generateContent([Content.text(prompt)]);
+    var response;
+    try {
+      response = await _model.generateContent([Content.text(prompt)]);
+    } catch (e) {
+      print('AiService.generarRutinaComoJson: Error al invocar modelo generativo: $e');
+      rethrow;
+    }
     final output = response.text;
     if (output == null) throw Exception('Respuesta vacía de Gemini');
 
@@ -282,7 +288,13 @@ o si no hay nada relevante:
 []
 ''';
 
-    final response = await _model.generateContent([Content.text(prompt)]);
+    var response;
+    try {
+      response = await _model.generateContent([Content.text(prompt)]);
+    } catch (e) {
+      print('AiService.analizarLesionesConGemini: Error al invocar modelo generativo: $e');
+      rethrow;
+    }
     String? output = response.text;
 
     if (output == null) {
@@ -346,12 +358,18 @@ La respuesta debe ser SOLO un JSON con esta estructura:
 No expliques tu decisión. No uses texto fuera del JSON. Solo devolvé el JSON ajustado.
 ''';
 
-    final response = await _model.generateContent([
-      Content.text(prompt),
-      Content.text('Perfil del usuario:\n${jsonEncode(perfil)}'),
-      Content.text('Rutina actual:\n${jsonEncode(rutinaActual)}'),
-      Content.text('Resumen mensual:\n${jsonEncode(resumenMensual)}'),
-    ]);
+    var response;
+    try {
+      response = await _model.generateContent([
+        Content.text(prompt),
+        Content.text('Perfil del usuario:\n${jsonEncode(perfil)}'),
+        Content.text('Rutina actual:\n${jsonEncode(rutinaActual)}'),
+        Content.text('Resumen mensual:\n${jsonEncode(resumenMensual)}'),
+      ]);
+    } catch (e) {
+      print('AiService.ajustarRutinaConHistorial: Error al invocar modelo generativo: $e');
+      rethrow;
+    }
 
     final rawText = response.text ?? '{}';
     final limpio = limpiarJson(rawText);

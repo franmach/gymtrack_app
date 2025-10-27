@@ -24,14 +24,15 @@ class RutinaService {
       );
       final rutinasRef = FirebaseFirestore.instance.collection('rutinas');
 
-      final snapshot = await rutinasRef
-          .where('uid', isEqualTo: usuario.uid)
-          .where('es_actual', isEqualTo: true)
-          .get();
-      for (final doc in snapshot.docs) {
-        await doc.reference.update({'es_actual': false});
-      }
-      await rutinasRef.add({
+      try {
+        final snapshot = await rutinasRef
+            .where('uid', isEqualTo: usuario.uid)
+            .where('es_actual', isEqualTo: true)
+            .get();
+        for (final doc in snapshot.docs) {
+          await doc.reference.update({'es_actual': false});
+        }
+        await rutinasRef.add({
         'uid': usuario.uid,
         'fecha_generacion': DateTime.now().toIso8601String(),
         'objetivo': usuario.objetivo,
@@ -51,9 +52,16 @@ class RutinaService {
         }).toList(),
       });
 
-      print('Rutina generada y guardada correctamente');
+        print('Rutina generada y guardada correctamente');
+      } on FirebaseException catch (fe) {
+        print('RutinaService: FirebaseException al guardar rutina: code=${fe.code} message=${fe.message}');
+        rethrow;
+      } catch (e) {
+        print('Error al generar rutina: $e');
+        rethrow;
+      }
     } catch (e) {
-      print('Error al generar rutina: $e');
+      print('RutinaService.generarRutinaDesdePerfil error: $e');
       rethrow;
     }
   }

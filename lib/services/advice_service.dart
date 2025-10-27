@@ -74,8 +74,9 @@ class AdviceService {
     final perfilRaw = await _userRepo.fetchUsuarioRaw(userId);
     final rutinaActual = await _userRepo.fetchRutinaActual(userId);
     final sesionesRaw = await _userRepo.fetchSessions(uid: userId, limit: 50);
-    final planSnap = await _firestore.collection('nutritionPlans').doc(userId).get();
-    final nutritionPlan = planSnap.exists ? planSnap.data() : null;
+  // Leer plan nutricional por documento (ruta nueva: nutrition_plans/{userId})
+  final planSnap = await _firestore.collection('nutrition_plans').doc(userId).get();
+  final nutritionPlan = planSnap.exists ? planSnap.data() : null;
 
     // Construir prompt unificado (breve y estructurado)
     final promptBuffer = StringBuffer()
@@ -172,7 +173,15 @@ class AdviceService {
       final ref = advCol.doc();
       batch.set(ref, m);
     }
-    await batch.commit();
+    try {
+      await batch.commit();
+    } on FirebaseException catch (fe) {
+      print('AdviceService: FirebaseException al guardar consejos: code=${fe.code} message=${fe.message}');
+      rethrow;
+    } catch (e) {
+      print('AdviceService: error al guardar consejos: $e');
+      rethrow;
+    }
   }
 
   /// Recupera los consejos del usuario (consulta puntual).
@@ -189,20 +198,34 @@ class AdviceService {
       }
     }
 
-    final snap = await _firestore
-        .collection('educational_advices')
-        .doc(userId)
-        .collection('advices')
-        .orderBy('fecha', descending: true)
-        .get();
+    try {
+      final snap = await _firestore
+          .collection('educational_advices')
+          .doc(userId)
+          .collection('advices')
+          .orderBy('fecha', descending: true)
+          .get();
 
-    return snap.docs.map((d) => EducationalAdvice.fromMap(d.data(), d.id)).toList();
+      return snap.docs.map((d) => EducationalAdvice.fromMap(d.data(), d.id)).toList();
+    } on FirebaseException catch (fe) {
+      print('AdviceService.getUserAdvices: FirebaseException code=${fe.code} message=${fe.message}');
+      rethrow;
+    } catch (e) {
+      print('AdviceService.getUserAdvices error: $e');
+      rethrow;
+    }
   }
 
   /// Stream en tiempo real de consejos del usuario (para UI reactiva).
   Stream<List<EducationalAdvice>> streamUserAdvices(String userId) {
     // Nota: la seguridad final debe implementarse con reglas de Firestore.
     final coll = _firestore.collection('educational_advices').doc(userId).collection('advices').orderBy('fecha', descending: true);
-    return coll.snapshots().map((qs) => qs.docs.map((d) => EducationalAdvice.fromMap(d.data(), d.id)).toList());
+    return coll.snapshots().handleError((e) {
+      if (e is FirebaseException) {
+        print('AdviceService.streamUserAdvices: FirebaseException code=${e.code} message=${e.message}');
+      } else {
+        print('AdviceService.streamUserAdvices error: $e');
+      }
+    }).map((qs) => qs.docs.map((d) => EducationalAdvice.fromMap(d.data(), d.id)).toList());
   }
 }
