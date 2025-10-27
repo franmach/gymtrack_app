@@ -9,111 +9,226 @@ class RoutinesAdminScreen extends StatefulWidget {
 }
 
 class _RoutinesAdminScreenState extends State<RoutinesAdminScreen> {
-  final _col = FirebaseFirestore.instance.collection('rutinas_plantillas');
-  String _query = '';
-  int _rowsPerPage = PaginatedDataTable.defaultRowsPerPage;
+  final _usersCol = FirebaseFirestore.instance.collection('usuarios');
+  String? _selectedUserId;
+  String? _selectedUserName;
+  String _searchQuery = '';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Gestión de Rutinas')),
+      body: Row(
+        children: [
+          // ---- PANEL IZQUIERDO: USUARIOS ----
+          Expanded(
+            flex: 2,
+            child: Column(
+              children: [
+                // 🔍 BUSCADOR DE USUARIOS
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  child: TextField(
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.search),
+                      hintText: 'Buscar usuario...',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (v) =>
+                        setState(() => _searchQuery = v.trim().toLowerCase()),
+                  ),
+                ),
+
+                // 📋 LISTADO DE USUARIOS
+                Expanded(
+                  child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                    stream: _usersCol.orderBy('nombre').snapshots(),
+                    builder: (context, snap) {
+                      if (snap.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                            child: CircularProgressIndicator());
+                      }
+                      if (snap.hasError) {
+                        return Center(child: Text('Error: ${snap.error}'));
+                      }
+
+                      final allUsers = snap.data?.docs ?? [];
+                      // 🔎 Filtro local por nombre o email
+                      final filteredUsers = allUsers.where((doc) {
+                        final data = doc.data();
+                        final nombre =
+                            (data['nombre'] ?? '').toString().toLowerCase();
+                        final email =
+                            (data['email'] ?? '').toString().toLowerCase();
+                        return nombre.contains(_searchQuery) ||
+                            email.contains(_searchQuery);
+                      }).toList();
+
+                      if (filteredUsers.isEmpty) {
+                        return const Center(
+                            child: Text('No se encontraron usuarios'));
+                      }
+
+                      return ListView.builder(
+                        itemCount: filteredUsers.length,
+                        itemBuilder: (context, i) {
+                          final u = filteredUsers[i].data();
+                          final selected =
+                              filteredUsers[i].id == _selectedUserId;
+                          return Card(
+                            color: selected ? Colors.blue.shade100 : null,
+                            margin: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            child: ListTile(
+                              title: Text(u['nombre'] ?? 'Sin nombre'),
+                              subtitle: Text(u['email'] ?? ''),
+                              selected: selected,
+                              onTap: () {
+                                setState(() {
+                                  _selectedUserId = filteredUsers[i].id;
+                                  _selectedUserName = u['nombre'] ?? 'Usuario';
+                                });
+                              },
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ---- PANEL DERECHO: RUTINAS DEL USUARIO ----
+          Expanded(
+            flex: 3,
+            child: _selectedUserId == null
+                ? const Center(
+                    child: Text(
+                      'Seleccione un usuario para ver sus rutinas',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  )
+                : _UserRoutinesList(
+                    userId: _selectedUserId!,
+                    userName: _selectedUserName ?? '',
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// -----------------------------------------------
+// LISTA DE RUTINAS POR USUARIO
+// -----------------------------------------------
+class _UserRoutinesList extends StatelessWidget {
+  final String userId;
+  final String userName;
+
+  const _UserRoutinesList({
+    required this.userId,
+    required this.userName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final _col = FirebaseFirestore.instance.collection('rutinas');
+
+    return Scaffold(
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(60),
+        child: Container(
+          color: Colors.blueGrey.shade50,
+          alignment: Alignment.centerLeft,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            'Rutinas de $userName',
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: _col.orderBy('nombre').snapshots(),
+        stream: _col.where('uid', isEqualTo: userId).snapshots(),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (snap.hasError) {
-            return Center(child: Text('Error: ${snap.error}'));
-          }
+          if (snap.hasError) return Text('Error: ${snap.error}');
           if (!snap.hasData || snap.data!.docs.isEmpty) {
-            return const Center(child: Text('No hay rutinas registradas'));
+            return const Center(child: Text('No hay rutinas asignadas'));
           }
 
-          final docs = snap.data!.docs.where((d) {
-            if (_query.isEmpty) return true;
-            final m = d.data();
-            final nombre = (m['nombre'] ?? '').toString().toLowerCase();
-            final objetivo = (m['objetivo'] ?? '').toString().toLowerCase();
-            return nombre.contains(_query) || objetivo.contains(_query);
-          }).toList();
+          final docs = snap.data!.docs;
 
-          final source = _RoutinesTableSource(
-            docs: docs,
-            onEdit: (doc) => showDialog(
-              context: context,
-              builder: (_) =>
-                  _RoutineEditorDialog(routineId: doc.id, initial: doc.data()),
-            ),
-            onDuplicate: (doc) async {
-              final data = doc.data();
-              final newData = {...data, 'nombre': '${data['nombre']} (copia)'};
-              await _col.add(newData);
-            },
-            onDelete: (doc) async {
-              final nombre = doc['nombre'] ?? '(sin nombre)';
-              final assigned = await FirebaseFirestore.instance
-                  .collection('usuarios')
-                  .where('rutinaPlantillaId', isEqualTo: doc.id)
-                  .get();
-              if (assigned.docs.isNotEmpty) {
-                final ok = await showDialog<bool>(
-                  context: context,
-                  builder: (_) => AlertDialog(
-                    title: const Text('Rutina en uso'),
-                    content: Text(
-                        'La rutina "$nombre" está asignada a ${assigned.docs.length} usuario(s). '
-                        'Si la eliminas, dejarán de tenerla asociada. ¿Continuar?'),
-                    actions: [
-                      TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Cancelar')),
-                      ElevatedButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text('Eliminar')),
+          return ListView.builder(
+            itemCount: docs.length,
+            itemBuilder: (context, i) {
+              final r = docs[i].data();
+              return Card(
+                margin:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                child: ListTile(
+                  title: Text(r['nombre'] ?? ''),
+                  subtitle: Text(
+                    'Objetivo: ${r['objetivo'] ?? ''}\n'
+                    'Nivel: ${r['nivel'] ?? ''} | Días: ${r['dias'] ?? ''}',
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (_) => _RoutineEditorDialog(
+                              routineId: docs[i].id,
+                              initial: r,
+                              userId: userId,
+                            ),
+                          );
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (_) => AlertDialog(
+                              title: const Text('Eliminar rutina'),
+                              content: Text(
+                                  '¿Seguro que desea eliminar la rutina "${r['nombre']}"?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
+                                  child: const Text('Cancelar'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, true),
+                                  child: const Text('Eliminar'),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (confirm == true) {
+                            await _col.doc(docs[i].id).delete();
+                          }
+                        },
+                      ),
                     ],
                   ),
-                );
-                if (ok != true) return;
-              }
-              await _col.doc(doc.id).delete();
+                ),
+              );
             },
-          );
-
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(8),
-                child: TextField(
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.search),
-                    hintText: 'Buscar rutina...',
-                    border: OutlineInputBorder(),
-                  ),
-                  onChanged: (v) =>
-                      setState(() => _query = v.trim().toLowerCase()),
-                ),
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: PaginatedDataTable(
-                    header: const Text('Rutinas'),
-                    rowsPerPage: _rowsPerPage,
-                    onRowsPerPageChanged: (v) {
-                      if (v != null) setState(() => _rowsPerPage = v);
-                    },
-                    columns: const [
-                      DataColumn(label: Text('Nombre')),
-                      DataColumn(label: Text('Objetivo')),
-                      DataColumn(label: Text('Nivel')),
-                      DataColumn(label: Text('Días')),
-                      DataColumn(label: Text('Acciones')),
-                    ],
-                    source: source,
-                  ),
-                ),
-              ),
-            ],
           );
         },
       ),
@@ -121,7 +236,7 @@ class _RoutinesAdminScreenState extends State<RoutinesAdminScreen> {
         onPressed: () {
           showDialog(
             context: context,
-            builder: (_) => const _RoutineEditorDialog(),
+            builder: (_) => _RoutineEditorDialog(userId: userId),
           );
         },
         child: const Icon(Icons.add),
@@ -130,63 +245,15 @@ class _RoutinesAdminScreenState extends State<RoutinesAdminScreen> {
   }
 }
 
-class _RoutinesTableSource extends DataTableSource {
-  final List<QueryDocumentSnapshot<Map<String, dynamic>>> docs;
-  final void Function(QueryDocumentSnapshot<Map<String, dynamic>>) onEdit;
-  final void Function(QueryDocumentSnapshot<Map<String, dynamic>>) onDuplicate;
-  final void Function(QueryDocumentSnapshot<Map<String, dynamic>>) onDelete;
-
-  _RoutinesTableSource({
-    required this.docs,
-    required this.onEdit,
-    required this.onDuplicate,
-    required this.onDelete,
-  });
-
-  @override
-  DataRow? getRow(int index) {
-    if (index >= docs.length) return null;
-    final d = docs[index];
-    final m = d.data();
-    final nombre = (m['nombre'] ?? '').toString();
-    final objetivo = (m['objetivo'] ?? '').toString();
-    final nivel = (m['nivel'] ?? '').toString();
-    final dias = (m['dias'] ?? 0).toString();
-
-    return DataRow.byIndex(
-      index: index,
-      cells: [
-        DataCell(Text(nombre)),
-        DataCell(Text(objetivo)),
-        DataCell(Text(nivel)),
-        DataCell(Text(dias)),
-        DataCell(Row(
-          children: [
-            IconButton(icon: const Icon(Icons.edit), onPressed: () => onEdit(d)),
-            IconButton(
-                icon: const Icon(Icons.copy), onPressed: () => onDuplicate(d)),
-            IconButton(
-                icon: const Icon(Icons.delete), onPressed: () => onDelete(d)),
-          ],
-        )),
-      ],
-    );
-  }
-
-  @override
-  bool get isRowCountApproximate => false;
-
-  @override
-  int get rowCount => docs.length;
-
-  @override
-  int get selectedRowCount => 0;
-}
-
+// -----------------------------------------------
+// EDITOR DE RUTINA
+// -----------------------------------------------
 class _RoutineEditorDialog extends StatefulWidget {
   final String? routineId;
+  final String? userId;
   final Map<String, dynamic>? initial;
-  const _RoutineEditorDialog({this.routineId, this.initial});
+
+  const _RoutineEditorDialog({this.routineId, this.userId, this.initial});
 
   @override
   State<_RoutineEditorDialog> createState() => _RoutineEditorDialogState();
@@ -194,7 +261,7 @@ class _RoutineEditorDialog extends StatefulWidget {
 
 class _RoutineEditorDialogState extends State<_RoutineEditorDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _col = FirebaseFirestore.instance.collection('rutinas_plantillas');
+  final _col = FirebaseFirestore.instance.collection('rutinas');
 
   late final TextEditingController _nombre;
   late final TextEditingController _objetivo;
@@ -206,7 +273,8 @@ class _RoutineEditorDialogState extends State<_RoutineEditorDialog> {
   void initState() {
     super.initState();
     _nombre = TextEditingController(text: widget.initial?['nombre'] ?? '');
-    _objetivo = TextEditingController(text: widget.initial?['objetivo'] ?? '');
+    _objetivo =
+        TextEditingController(text: widget.initial?['objetivo'] ?? '');
     _nivel = widget.initial?['nivel'] ?? 'Principiante';
     _dias = (widget.initial?['dias'] ?? 3) as int;
     _ejercicios = List<Map<String, dynamic>>.from(
@@ -228,6 +296,7 @@ class _RoutineEditorDialogState extends State<_RoutineEditorDialog> {
       'objetivo': _objetivo.text.trim(),
       'nivel': _nivel,
       'dias': _dias,
+      'usuarioId': widget.userId,
       'ejercicios': _ejercicios,
       'updatedAt': FieldValue.serverTimestamp(),
     };
@@ -255,7 +324,9 @@ class _RoutineEditorDialogState extends State<_RoutineEditorDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.routineId == null ? 'Nueva Rutina' : 'Editar Rutina'),
+      title: Text(widget.routineId == null
+          ? 'Nueva Rutina'
+          : 'Editar Rutina'),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -265,7 +336,8 @@ class _RoutineEditorDialogState extends State<_RoutineEditorDialog> {
               TextFormField(
                 controller: _nombre,
                 decoration: const InputDecoration(labelText: 'Nombre'),
-                validator: (v) => (v == null || v.isEmpty) ? 'Requerido' : null,
+                validator: (v) =>
+                    (v == null || v.isEmpty) ? 'Requerido' : null,
               ),
               TextFormField(
                 controller: _objetivo,
@@ -275,18 +347,25 @@ class _RoutineEditorDialogState extends State<_RoutineEditorDialog> {
                 value: _nivel,
                 decoration: const InputDecoration(labelText: 'Nivel'),
                 items: const [
-                  DropdownMenuItem(value: 'Principiante', child: Text('Principiante')),
-                  DropdownMenuItem(value: 'Intermedio', child: Text('Intermedio')),
-                  DropdownMenuItem(value: 'Avanzado', child: Text('Avanzado')),
+                  DropdownMenuItem(
+                      value: 'Principiante (0-1 año)', child: Text('Principiante (0-1 año)')),
+                  DropdownMenuItem(
+                      value: 'Intermedio (1-3 años)', child: Text('Intermedio (1-3 años)')),
+                  DropdownMenuItem(
+                      value: 'Avanzado (3+ años)', child: Text('Avanzado (3+ años)')),
                 ],
-                onChanged: (v) => setState(() => _nivel = v ?? 'Principiante'),
+                onChanged: (v) => setState(() => _nivel = v ?? 'Principiante (0-1)'),
               ),
               DropdownButtonFormField<int>(
                 value: _dias,
-                decoration: const InputDecoration(labelText: 'Días por semana'),
+                decoration:
+                    const InputDecoration(labelText: 'Días por semana'),
                 items: List.generate(
                   7,
-                  (i) => DropdownMenuItem(value: i + 1, child: Text('${i + 1}')),
+                  (i) => DropdownMenuItem(
+                    value: i + 1,
+                    child: Text('${i + 1}'),
+                  ),
                 ),
                 onChanged: (v) => setState(() => _dias = v ?? 3),
               ),
@@ -299,13 +378,15 @@ class _RoutineEditorDialogState extends State<_RoutineEditorDialog> {
                 itemBuilder: (context, index) {
                   final ex = _ejercicios[index];
                   return Card(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
                     child: Padding(
                       padding: const EdgeInsets.all(8),
                       child: Column(
                         children: [
                           TextFormField(
                             initialValue: ex['nombre'],
-                            decoration: const InputDecoration(labelText: 'Nombre del ejercicio'),
+                            decoration: const InputDecoration(
+                                labelText: 'Nombre del ejercicio'),
                             onChanged: (v) => ex['nombre'] = v,
                           ),
                           Row(
@@ -313,27 +394,33 @@ class _RoutineEditorDialogState extends State<_RoutineEditorDialog> {
                               Expanded(
                                 child: TextFormField(
                                   initialValue: ex['series'].toString(),
-                                  decoration: const InputDecoration(labelText: 'Series'),
+                                  decoration: const InputDecoration(
+                                      labelText: 'Series'),
                                   keyboardType: TextInputType.number,
-                                  onChanged: (v) => ex['series'] = int.tryParse(v) ?? 0,
+                                  onChanged: (v) =>
+                                      ex['series'] = int.tryParse(v) ?? 0,
                                 ),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: TextFormField(
                                   initialValue: ex['reps'].toString(),
-                                  decoration: const InputDecoration(labelText: 'Repeticiones'),
+                                  decoration: const InputDecoration(
+                                      labelText: 'Repeticiones'),
                                   keyboardType: TextInputType.number,
-                                  onChanged: (v) => ex['reps'] = int.tryParse(v) ?? 0,
+                                  onChanged: (v) =>
+                                      ex['reps'] = int.tryParse(v) ?? 0,
                                 ),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: TextFormField(
                                   initialValue: ex['peso'].toString(),
-                                  decoration: const InputDecoration(labelText: 'Peso (kg)'),
+                                  decoration: const InputDecoration(
+                                      labelText: 'Peso (kg)'),
                                   keyboardType: TextInputType.number,
-                                  onChanged: (v) => ex['peso'] = double.tryParse(v) ?? 0,
+                                  onChanged: (v) => ex['peso'] =
+                                      double.tryParse(v) ?? 0,
                                 ),
                               ),
                             ],
@@ -365,7 +452,9 @@ class _RoutineEditorDialogState extends State<_RoutineEditorDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar')),
         ElevatedButton(onPressed: _save, child: const Text('Guardar')),
       ],
     );
