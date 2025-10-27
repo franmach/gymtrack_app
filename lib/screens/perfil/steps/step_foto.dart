@@ -47,6 +47,18 @@ class StepFotoScreen extends StatelessWidget {
               spacing: 12,
               children: [
                 ElevatedButton.icon(
+                  icon: const Icon(Icons.camera_alt),
+                  label: const Text('Cámara'),
+                  onPressed: () async {
+                    final picker = ImagePicker();
+                    final picked = await picker.pickImage(
+                      source: ImageSource.camera,
+                      imageQuality: 85,
+                    );
+                    await ctrl.setImagenXFile(picked);
+                  },
+                ),
+                ElevatedButton.icon(
                   icon: const Icon(Icons.photo),
                   label: const Text('Galería'),
                   onPressed: () async {

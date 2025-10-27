@@ -4,7 +4,8 @@ import 'package:gymtrack_app/screens/perfil/perfil_screen.dart';
 import 'package:gymtrack_app/services/ai_service.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 
 class CompletarPerfilScreen extends StatefulWidget {
   final String uid;
@@ -83,21 +84,17 @@ class _CompletarPerfilScreenState extends State<CompletarPerfilScreen> {
 
     String? urlImagen;
 
-    // SUBIR IMAGEN A STORAGE SI HAY UNA
+    // GUARDAR IMAGEN LOCALMENTE SI HAY UNA
     try {
       if (imagenSeleccionada != null && imagenSeleccionada!.existsSync()) {
-        final storageRef = FirebaseStorage.instance
-            .ref()
-            .child('usuarios')
-            .child('${widget.uid}.jpg');
-
-        final uploadTask = storageRef.putFile(imagenSeleccionada!);
-
-        final snapshot = await uploadTask.whenComplete(() => null);
-        urlImagen = await snapshot.ref.getDownloadURL();
+        final appDir = await getApplicationDocumentsDirectory();
+        final filename = 'profile_${widget.uid}.jpg';
+        final savedPath = p.join(appDir.path, filename);
+        final savedFile = await imagenSeleccionada!.copy(savedPath);
+        urlImagen = savedFile.path; // guardamos la ruta local
       }
     } catch (e) {
-      print("❌ Error al subir imagen: $e");
+      print("❌ Error al guardar imagen local: $e");
     }
 
     try {
@@ -148,21 +145,50 @@ class _CompletarPerfilScreenState extends State<CompletarPerfilScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: tomarFotoConCamara,
-                          icon: const Icon(Icons.camera_alt),
-                          label: const Text('Tomar foto'),
-                        ),
-                        const SizedBox(width: 10),
-                        ElevatedButton.icon(
-                          onPressed: _seleccionarImagen,
-                          icon: const Icon(Icons.photo),
-                          label: const Text('Galería'),
-                        ),
-                      ],
+                    // Reemplazamos el Row por un LayoutBuilder + Wrap responsivo.
+                    // Motivo: en algunas combinaciones de widgets (Center/Column/
+                    // ConstrainedBox) el Row puede recibir constraints infinitas
+                    // y los Expanded no comportarse como se espera, dejando un
+                    // botón colapsado. Con LayoutBuilder calculamos el ancho
+                    // disponible y con Wrap garantizamos que ambos botones sean
+                    // visibles: lado a lado en pantallas amplias, apilados en
+                    // pantallas estrechas.
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        // margen interno del form (16) ya aplicado arriba; aquí
+                        // usamos el ancho disponible directamente.
+                        final maxW = constraints.maxWidth;
+                        // Si hay suficiente espacio, cada botón ocupara la mitad
+                        // menos el espacio entre ellos; si no, ocupan todo y se
+                        // apilan verticalmente.
+                        final double btnWidth = (maxW > 360) ? (maxW - 10) / 2 : maxW;
+
+                        return Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          alignment: WrapAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: btnWidth,
+                              height: 48,
+                              child: ElevatedButton.icon(
+                                onPressed: tomarFotoConCamara,
+                                icon: const Icon(Icons.camera_alt),
+                                label: const Text('Cámara'),
+                              ),
+                            ),
+                            SizedBox(
+                              width: btnWidth,
+                              height: 48,
+                              child: ElevatedButton.icon(
+                                onPressed: _seleccionarImagen,
+                                icon: const Icon(Icons.photo),
+                                label: const Text('Galería'),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                     if (imagenSeleccionada != null)
                       Image.file(imagenSeleccionada!, height: 150),
