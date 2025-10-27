@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gymtrack_app/screens/dashboard/dashboard_screen.dart';
+import 'package:gymtrack_app/screens/admin/admin_hub_screen.dart';
 import 'package:gymtrack_app/screens/auth/forgotPassword_screen.dart';
 import 'package:gymtrack_app/screens/auth/register_screen.dart';
 
@@ -35,7 +37,6 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      // 2) Intentamos autenticar con Firebase
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailCtrl.text.trim(),
         password: _passCtrl.text,
@@ -43,22 +44,33 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
 
-      // 3) Mostramos SnackBar de confirmación
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('👍 Login exitoso'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      final uid = FirebaseAuth.instance.currentUser!.uid;
+      final ref = FirebaseFirestore.instance.collection('usuarios').doc(uid);
+      final snap = await ref.get();
 
-      // 4) Esperamos un breve intervalo
-      await Future.delayed(const Duration(seconds: 1));
+      // Asegurar doc y role/rol por defecto si faltan (sin degradar admin)
+      Map<String, dynamic> data = snap.data() ?? {};
+      final hasRole = data.containsKey('role');
+      final hasRol  = data.containsKey('rol');
+      final alreadyAdmin = (data['role'] == 'admin') || (data['rol'] == 'admin');
 
-      // 5) Navegamos al Dashboard reemplazando el LoginScreen
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const DashboardScreen()),
-      );
+      if (!snap.exists || !hasRole || !hasRol) {
+        await ref.set({
+          if (!snap.exists) 'email': _emailCtrl.text.trim(),
+          if (!hasRole) 'role': alreadyAdmin ? 'admin' : 'user',
+          if (!hasRol)  'rol': alreadyAdmin ? 'admin' : 'alumno',
+          'activo': true,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        data = (await ref.get()).data() ?? {};
+      }
+
+      final isAdmin = (data['role'] == 'admin') || (data['rol'] == 'admin');
+      if (isAdmin) {
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AdminHubScreen()));
+      } else {
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const DashboardScreen()));
+      }
     } on FirebaseAuthException catch (e) {
       // 6) Manejamos errores de autenticación
       switch (e.code) {

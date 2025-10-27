@@ -47,6 +47,9 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
 
   /// Carga inicial de recursos: perfil y último plan
   Future<void> _loadResources() async {
+    await FirebaseAuth.instance.authStateChanges().firstWhere((u) => u != null);
+    await FirebaseAuth.instance.currentUser?.getIdToken(true);
+    await _loadUserProfile();
     await Future.wait([
       _loadUserProfile(),
       _loadExistingPlan(),

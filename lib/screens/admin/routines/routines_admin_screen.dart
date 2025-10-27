@@ -9,16 +9,23 @@ class RoutinesAdminScreen extends StatefulWidget {
 }
 
 class _RoutinesAdminScreenState extends State<RoutinesAdminScreen> {
-  final _col = FirebaseFirestore.instance.collection('rutinas_plantillas');
+  final _col = FirebaseFirestore.instance.collection('rutinas');
   String _query = '';
   int _rowsPerPage = PaginatedDataTable.defaultRowsPerPage;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Gestión de Rutinas')),
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        title: const Text(
+          'Gestión de Rutinas',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: _col.orderBy('nombre').snapshots(),
+        stream: _col.snapshots(),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -56,6 +63,7 @@ class _RoutinesAdminScreenState extends State<RoutinesAdminScreen> {
                   .collection('usuarios')
                   .where('rutinaPlantillaId', isEqualTo: doc.id)
                   .get();
+
               if (assigned.docs.isNotEmpty) {
                 final ok = await showDialog<bool>(
                   context: context,
@@ -83,12 +91,21 @@ class _RoutinesAdminScreenState extends State<RoutinesAdminScreen> {
           return Column(
             children: [
               Padding(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                 child: TextField(
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.search),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.search, color: Colors.white70),
                     hintText: 'Buscar rutina...',
-                    border: OutlineInputBorder(),
+                    hintStyle: const TextStyle(color: Colors.white54),
+                    filled: true,
+                    fillColor: const Color(0xFF1A1A1A),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide:
+                          const BorderSide(color: Colors.white24, width: 1),
+                    ),
+                    isDense: true,
                   ),
                   onChanged: (v) =>
                       setState(() => _query = v.trim().toLowerCase()),
@@ -96,20 +113,33 @@ class _RoutinesAdminScreenState extends State<RoutinesAdminScreen> {
               ),
               Expanded(
                 child: SingleChildScrollView(
-                  child: PaginatedDataTable(
-                    header: const Text('Rutinas'),
-                    rowsPerPage: _rowsPerPage,
-                    onRowsPerPageChanged: (v) {
-                      if (v != null) setState(() => _rowsPerPage = v);
-                    },
-                    columns: const [
-                      DataColumn(label: Text('Nombre')),
-                      DataColumn(label: Text('Objetivo')),
-                      DataColumn(label: Text('Nivel')),
-                      DataColumn(label: Text('Días')),
-                      DataColumn(label: Text('Acciones')),
-                    ],
-                    source: source,
+                  scrollDirection: Axis.horizontal,
+                  child: SizedBox(
+                    width: MediaQuery.of(context).size.width,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.vertical,
+                      child: PaginatedDataTable(
+                        header: const Text(
+                          'Rutinas',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        rowsPerPage: _rowsPerPage,
+                        onRowsPerPageChanged: (v) {
+                          if (v != null) setState(() => _rowsPerPage = v);
+                        },
+                        columnSpacing: 24,
+                        horizontalMargin: 16,
+                        showFirstLastButtons: true,
+                        columns: const [
+                          DataColumn(label: Text('Nombre')),
+                          DataColumn(label: Text('Objetivo')),
+                          DataColumn(label: Text('Nivel')),
+                          DataColumn(label: Text('Días')),
+                          DataColumn(label: Text('Acciones')),
+                        ],
+                        source: source,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -118,13 +148,14 @@ class _RoutinesAdminScreenState extends State<RoutinesAdminScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFF4cff00),
         onPressed: () {
           showDialog(
             context: context,
             builder: (_) => const _RoutineEditorDialog(),
           );
         },
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add, color: Colors.black),
       ),
     );
   }
@@ -162,11 +193,15 @@ class _RoutinesTableSource extends DataTableSource {
         DataCell(Text(dias)),
         DataCell(Row(
           children: [
-            IconButton(icon: const Icon(Icons.edit), onPressed: () => onEdit(d)),
             IconButton(
-                icon: const Icon(Icons.copy), onPressed: () => onDuplicate(d)),
+                icon: const Icon(Icons.edit, color: Colors.white),
+                onPressed: () => onEdit(d)),
             IconButton(
-                icon: const Icon(Icons.delete), onPressed: () => onDelete(d)),
+                icon: const Icon(Icons.copy, color: Colors.white),
+                onPressed: () => onDuplicate(d)),
+            IconButton(
+                icon: const Icon(Icons.delete, color: Colors.white),
+                onPressed: () => onDelete(d)),
           ],
         )),
       ],
@@ -175,10 +210,8 @@ class _RoutinesTableSource extends DataTableSource {
 
   @override
   bool get isRowCountApproximate => false;
-
   @override
   int get rowCount => docs.length;
-
   @override
   int get selectedRowCount => 0;
 }
@@ -194,11 +227,11 @@ class _RoutineEditorDialog extends StatefulWidget {
 
 class _RoutineEditorDialogState extends State<_RoutineEditorDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _col = FirebaseFirestore.instance.collection('rutinas_plantillas');
+  final _col = FirebaseFirestore.instance.collection('rutinas');
 
   late final TextEditingController _nombre;
   late final TextEditingController _objetivo;
-  String _nivel = 'Principiante';
+  String _nivel = 'Principiante (0–1 año)';
   int _dias = 3;
   List<Map<String, dynamic>> _ejercicios = [];
 
@@ -207,10 +240,17 @@ class _RoutineEditorDialogState extends State<_RoutineEditorDialog> {
     super.initState();
     _nombre = TextEditingController(text: widget.initial?['nombre'] ?? '');
     _objetivo = TextEditingController(text: widget.initial?['objetivo'] ?? '');
-    _nivel = widget.initial?['nivel'] ?? 'Principiante';
+    _nivel = widget.initial?['nivel'] ?? 'Principiante (0–1 año)';
     _dias = (widget.initial?['dias'] ?? 3) as int;
-    _ejercicios = List<Map<String, dynamic>>.from(
-        widget.initial?['ejercicios'] ?? <Map<String, dynamic>>[]);
+
+    final ejerciciosRaw = widget.initial?['ejercicios'];
+    if (ejerciciosRaw is List) {
+      _ejercicios = ejerciciosRaw
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+    } else {
+      _ejercicios = [];
+    }
   }
 
   @override
@@ -235,7 +275,7 @@ class _RoutineEditorDialogState extends State<_RoutineEditorDialog> {
     if (widget.routineId == null) {
       await _col.add(data);
     } else {
-      await _col.doc(widget.routineId).update(data);
+      await _col.doc(widget.routineId!).update(data);
     }
 
     if (mounted) Navigator.pop(context);
@@ -255,109 +295,97 @@ class _RoutineEditorDialogState extends State<_RoutineEditorDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.routineId == null ? 'Nueva Rutina' : 'Editar Rutina'),
+      backgroundColor: const Color(0xFF111111),
+      title: Text(
+        widget.routineId == null ? 'Nueva Rutina' : 'Editar Rutina',
+        style: const TextStyle(color: Colors.white),
+      ),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextFormField(
-                controller: _nombre,
-                decoration: const InputDecoration(labelText: 'Nombre'),
-                validator: (v) => (v == null || v.isEmpty) ? 'Requerido' : null,
-              ),
-              TextFormField(
-                controller: _objetivo,
-                decoration: const InputDecoration(labelText: 'Objetivo'),
-              ),
-              DropdownButtonFormField<String>(
-                value: _nivel,
-                decoration: const InputDecoration(labelText: 'Nivel'),
-                items: const [
-                  DropdownMenuItem(value: 'Principiante', child: Text('Principiante')),
-                  DropdownMenuItem(value: 'Intermedio', child: Text('Intermedio')),
-                  DropdownMenuItem(value: 'Avanzado', child: Text('Avanzado')),
+              _field('Nombre', _nombre, required: true),
+              _field('Objetivo', _objetivo),
+              _dropdown(
+                'Nivel',
+                _nivel,
+                [
+                  'Principiante (0–1 año)',
+                  'Intermedio (1–3 años)',
+                  'Avanzado (3+ años)',
                 ],
-                onChanged: (v) => setState(() => _nivel = v ?? 'Principiante'),
+                (v) => setState(() => _nivel = v),
               ),
-              DropdownButtonFormField<int>(
-                value: _dias,
-                decoration: const InputDecoration(labelText: 'Días por semana'),
-                items: List.generate(
-                  7,
-                  (i) => DropdownMenuItem(value: i + 1, child: Text('${i + 1}')),
-                ),
-                onChanged: (v) => setState(() => _dias = v ?? 3),
+              _dropdownInt(
+                'Días por semana',
+                _dias,
+                7,
+                (v) => setState(() => _dias = v),
               ),
               const SizedBox(height: 16),
-              const Text('Ejercicios',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              ListView.builder(
-                shrinkWrap: true,
-                itemCount: _ejercicios.length,
-                itemBuilder: (context, index) {
-                  final ex = _ejercicios[index];
-                  return Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Column(
-                        children: [
-                          TextFormField(
-                            initialValue: ex['nombre'],
-                            decoration: const InputDecoration(labelText: 'Nombre del ejercicio'),
-                            onChanged: (v) => ex['nombre'] = v,
-                          ),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextFormField(
-                                  initialValue: ex['series'].toString(),
-                                  decoration: const InputDecoration(labelText: 'Series'),
-                                  keyboardType: TextInputType.number,
-                                  onChanged: (v) => ex['series'] = int.tryParse(v) ?? 0,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: TextFormField(
-                                  initialValue: ex['reps'].toString(),
-                                  decoration: const InputDecoration(labelText: 'Repeticiones'),
-                                  keyboardType: TextInputType.number,
-                                  onChanged: (v) => ex['reps'] = int.tryParse(v) ?? 0,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: TextFormField(
-                                  initialValue: ex['peso'].toString(),
-                                  decoration: const InputDecoration(labelText: 'Peso (kg)'),
-                                  keyboardType: TextInputType.number,
-                                  onChanged: (v) => ex['peso'] = double.tryParse(v) ?? 0,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () {
-                                setState(() {
-                                  _ejercicios.removeAt(index);
-                                });
-                              },
-                            ),
-                          )
-                        ],
-                      ),
-                    ),
-                  );
-                },
+              const Text(
+                'Ejercicios',
+                style:
+                    TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
               ),
+              ..._ejercicios.asMap().entries.map((entry) {
+                final index = entry.key;
+                final ex = entry.value;
+                return Card(
+                  color: const Color(0xFF1A1A1A),
+                  margin: const EdgeInsets.symmetric(vertical: 6),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Column(
+                      children: [
+                        _innerField('Nombre del ejercicio', ex['nombre'] ?? '',
+                            (v) => ex['nombre'] = v),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _innerField('Series', '${ex['series'] ?? 0}',
+                                  (v) => ex['series'] = int.tryParse(v) ?? 0,
+                                  number: true),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _innerField(
+                                  'Repeticiones', '${ex['reps'] ?? 0}',
+                                  (v) =>
+                                      ex['reps'] = int.tryParse(v) ?? 0,
+                                  number: true),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _innerField(
+                                  'Peso (kg)', '${ex['peso'] ?? 0}',
+                                  (v) => ex['peso'] =
+                                      double.tryParse(v) ?? 0.0,
+                                  number: true),
+                            ),
+                          ],
+                        ),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: IconButton(
+                            icon:
+                                const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () {
+                              setState(() => _ejercicios.removeAt(index));
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
               TextButton.icon(
-                icon: const Icon(Icons.add),
-                label: const Text('Agregar ejercicio'),
+                icon: const Icon(Icons.add, color: Colors.white),
+                label: const Text('Agregar ejercicio',
+                    style: TextStyle(color: Colors.white)),
                 onPressed: _addExercise,
               ),
             ],
@@ -365,9 +393,124 @@ class _RoutineEditorDialogState extends State<_RoutineEditorDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-        ElevatedButton(onPressed: _save, child: const Text('Guardar')),
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar',
+                style: TextStyle(color: Colors.white70))),
+        ElevatedButton(
+          onPressed: _save,
+          style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4cff00)),
+          child: const Text('Guardar', style: TextStyle(color: Colors.black)),
+        ),
       ],
+    );
+  }
+
+  Widget _field(String label, TextEditingController ctrl,
+      {bool required = false,
+      TextInputType type = TextInputType.text,
+      String? Function(String?)? validator}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: TextFormField(
+        controller: ctrl,
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(color: Colors.white70),
+          enabledBorder: const OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.white24),
+          ),
+          focusedBorder: const OutlineInputBorder(
+            borderSide: BorderSide(color: Color(0xFF4cff00)),
+          ),
+        ),
+        keyboardType: type,
+        validator: validator ??
+            (required ? (v) => (v!.isEmpty ? 'Requerido' : null) : null),
+      ),
+    );
+  }
+
+  Widget _dropdown(String label, String value, List<String> items,
+      Function(String) onChanged) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: DropdownButtonFormField<String>(
+        value: items.contains(value) ? value : null,
+        items: items
+            .map((v) => DropdownMenuItem(value: v, child: Text(v)))
+            .toList(),
+        onChanged: (v) {
+          if (v != null) onChanged(v);
+        },
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(color: Colors.white70),
+          enabledBorder: const OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.white24),
+          ),
+          focusedBorder: const OutlineInputBorder(
+            borderSide: BorderSide(color: Color(0xFF4cff00)),
+          ),
+        ),
+        dropdownColor: const Color(0xFF1A1A1A),
+        style: const TextStyle(color: Colors.white),
+      ),
+    );
+  }
+
+  Widget _dropdownInt(
+      String label, int value, int max, Function(int) onChanged) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: DropdownButtonFormField<int>(
+        value: value,
+        items: List.generate(
+          max,
+          (i) => DropdownMenuItem(value: i + 1, child: Text('${i + 1}')),
+        ),
+        onChanged: (v) {
+          if (v != null) onChanged(v);
+        },
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(color: Colors.white70),
+          enabledBorder: const OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.white24),
+          ),
+          focusedBorder: const OutlineInputBorder(
+            borderSide: BorderSide(color: Color(0xFF4cff00)),
+          ),
+        ),
+        dropdownColor: const Color(0xFF1A1A1A),
+        style: const TextStyle(color: Colors.white),
+      ),
+    );
+  }
+
+  Widget _innerField(String label, String value, Function(String) onChanged,
+      {bool number = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: TextFormField(
+        initialValue: value,
+        style: const TextStyle(color: Colors.white),
+        keyboardType:
+            number ? TextInputType.number : TextInputType.text,
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(color: Colors.white70),
+          enabledBorder: const OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.white24),
+          ),
+          focusedBorder: const OutlineInputBorder(
+            borderSide: BorderSide(color: Color(0xFF4cff00)),
+          ),
+        ),
+        onChanged: onChanged,
+      ),
     );
   }
 }

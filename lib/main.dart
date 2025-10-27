@@ -9,6 +9,7 @@ import 'firebase_options.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'gymtrack_theme.dart';
 import 'package:gymtrack_app/services/ai_service.dart';
@@ -16,6 +17,7 @@ import 'package:gymtrack_app/services/nutrition_ai_service.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/perfil/perfil_screen.dart';
+import 'screens/admin/admin_hub_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -84,21 +86,24 @@ class AuthGate extends StatelessWidget {
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
+      builder: (context, s) {
+        if (s.connectionState == ConnectionState.waiting) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
+        final user = s.data;
+        if (user == null) return const LoginScreen();
 
-        final user = snapshot.data;
-        if (user == null) {
-          // No hay usuario: abrir pantalla de login
-          return const LoginScreen();
-        }
-
-        // Usuario logueado: mostrar la interfaz principal
-        return const MainTabbedScreen();
+        return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+          future: FirebaseFirestore.instance.collection('usuarios').doc(user.uid).get(),
+          builder: (context, d) {
+            if (d.connectionState == ConnectionState.waiting) {
+              return const Scaffold(body: Center(child: CircularProgressIndicator()));
+            }
+            final data = d.data?.data() ?? {};
+            final isAdmin = (data['role'] == 'admin') || (data['rol'] == 'admin');
+            return isAdmin ? const AdminHubScreen() : const MainTabbedScreen();
+          },
+        );
       },
     );
   }
