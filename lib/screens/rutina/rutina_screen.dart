@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+// 🔹 Importamos OfflineService
+import 'package:gymtrack_app/services/offline_service.dart';
 
 class RutinaScreen extends StatefulWidget {
   final String rutinaId;
@@ -12,6 +15,7 @@ class RutinaScreen extends StatefulWidget {
 
 class _RutinaScreenState extends State<RutinaScreen> {
   Map<String, dynamic>? rutina;
+  bool offlineMode = false; // 🔹 Para mostrar aviso si se usó offline
 
   @override
   void initState() {
@@ -22,15 +26,38 @@ class _RutinaScreenState extends State<RutinaScreen> {
   TextEditingController pesoController = TextEditingController();
 
   Future<void> _cargarRutina() async {
-    final doc = await FirebaseFirestore.instance
-        .collection('rutinas')
-        .doc(widget.rutinaId)
-        .get();
+    try {
+      // 🔹 Intentamos primero desde Firestore
+      final doc = await FirebaseFirestore.instance
+          .collection('rutinas')
+          .doc(widget.rutinaId)
+          .get();
 
-    if (doc.exists) {
-      setState(() {
-        rutina = doc.data();
-      });
+      if (doc.exists) {
+        setState(() {
+          rutina = doc.data();
+          offlineMode = false;
+        });
+
+        // 🔹 Guardamos offline para tener copia actualizada
+        final uid = FirebaseAuth.instance.currentUser!.uid;
+        await OfflineService.saveRoutine(uid, rutina!);
+        return;
+      }
+    } catch (e) {
+      print('❌ Error Firestore (¿sin conexión?): $e');
+    }
+
+    // 🔹 Si falla Firestore, intentamos cargar de Hive
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      final offlineData = OfflineService.getRoutine(uid);
+      if (offlineData != null) {
+        setState(() {
+          rutina = offlineData['routine'];
+          offlineMode = true;
+        });
+      }
     }
   }
 
@@ -45,91 +72,65 @@ class _RutinaScreenState extends State<RutinaScreen> {
     final dias = rutina!['rutina'] as List;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Mi Rutina')),
-      body: ListView.builder(
-        itemCount: dias.length,
-        itemBuilder: (context, index) {
-          final dia = dias[index];
-          final ejercicios = dia['ejercicios'] as List;
-
-          return ExpansionTile(
-            title: Text(
-              dia['dia'],
-              style: const TextStyle(fontWeight: FontWeight.bold),
+      appBar: AppBar(
+        title: const Text('Mi Rutina'),
+        backgroundColor: offlineMode ? Colors.orange : null, // 🔹 Aviso visual
+      ),
+      body: Column(
+        children: [
+          if (offlineMode)
+            Container(
+              width: double.infinity,
+              color: Colors.orange.shade100,
+              padding: const EdgeInsets.all(8),
+              child: const Text(
+                "Modo offline: mostrando última rutina guardada",
+                style: TextStyle(fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
             ),
-            children: ejercicios.map<Widget>((ej) {
-              final peso = ej['peso'];
-              return Card(
-                color: Colors.black,
-                margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        ej['nombre'],
-                        style:
-                            Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(Icons.fitness_center,
-                              color: Theme.of(context).primaryColor, size: 22),
-                          const SizedBox(width: 6),
-                          Text(
-                            ej['grupo_muscular'] ?? ej['grupoMuscular'] ?? '',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(color: Colors.white),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(Icons.format_list_numbered,
-                              color: Theme.of(context).primaryColor, size: 22),
-                          const SizedBox(width: 6),
-                          Text('Series: ${ej['series']}',
-                              style: TextStyle(color: Colors.white)),
-                          const SizedBox(width: 16),
-                          Icon(Icons.repeat,
-                              color: Theme.of(context).primaryColor, size: 22),
-                          const SizedBox(width: 6),
-                          Text('Reps: ${ej['repeticiones']}',
-                              style: TextStyle(color: Colors.white)),
-                        ],
-                      ),
-                      if (peso != null && (peso as num) > 0) ...[
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(Icons.fitness_center,
-                                color: Theme.of(context).primaryColor,
-                                size: 22),
-                            const SizedBox(width: 6),
-                            Text(
-                                'Peso recomendado: ${peso.toStringAsFixed(2)} kg',
-                                style: TextStyle(color: Colors.white)),
-                          ],
-                        ),
-                      ],
-                    ],
+          Expanded(
+            child: ListView.builder(
+              itemCount: dias.length,
+              itemBuilder: (context, index) {
+                final dia = dias[index];
+                final ejercicios = (dia['ejercicios'] as List<dynamic>);
+
+
+                return ExpansionTile(
+                  title: Text(
+                    dia['dia'],
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                ),
-              );
-            }).toList(),
-          );
-        },
+                  children: ejercicios.map<Widget>((ej) {
+  if (ej is Map<String, dynamic>) {
+    return ListTile(
+      title: Text(ej['nombre'] ?? ''),
+      subtitle: Text(
+        "${ej['series']}x${ej['repeticiones']} - Descanso: ${ej['descanso_segundos']}s",
+      ),
+    );
+  } else if (ej is String) {
+    return ListTile(
+      title: Text(
+        ej,
+        style: const TextStyle(
+          fontStyle: FontStyle.italic,
+          color: Colors.grey,
+        ),
+      ),
+    );
+  } else {
+    return const ListTile(
+      title: Text("Ejercicio no válido"),
+    );
+  }
+}).toList(),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

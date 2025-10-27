@@ -7,6 +7,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart'; // <-- IMPORT NECESARIO PARA XFile
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import '../../services/ai_service.dart';
 import 'package:gymtrack_app/services/generar_rutina_service.dart';
 
@@ -193,23 +195,38 @@ class PerfilWizardController extends ChangeNotifier {
             await ai.analizarLesionesConGemini(data.textoLesiones!);
       }
 
-      // Subir imagen si corresponde
+      // Guardar imagen localmente (o subir en web) si corresponde
       if (data.imagenBytes != null || data.imagenFile != null) {
-        final storageRef = FirebaseStorage.instance
-            .ref()
-            .child('usuarios')
-            .child('$uid.jpg');
-
         if (kIsWeb && data.imagenBytes != null) {
-          final meta = SettableMetadata(contentType: 'image/jpeg');
-          final snap = await storageRef.putData(data.imagenBytes!, meta);
-          data.imagenUrl = await snap.ref.getDownloadURL();
+            // En web mantenemos subida a Storage (no cambiamos comportamiento web)
+            final storageRef = FirebaseStorage.instance.ref().child('usuarios').child('$uid.jpg');
+            final meta = SettableMetadata(contentType: 'image/jpeg');
+            try {
+              // Añadimos un timeout para evitar bloqueos indefinidos en web (CORS/permisos pueden colgar)
+              final uploadFuture = storageRef.putData(data.imagenBytes!, meta);
+              final snap = await uploadFuture.timeout(const Duration(seconds: 20));
+              // Obtener URL con timeout también
+              data.imagenUrl = await snap.ref.getDownloadURL().timeout(const Duration(seconds: 10));
+            } catch (e) {
+              // Registrar y continuar: no queremos que un fallo de Storage bloquee el guardado del perfil
+              debugPrint('Error subiendo imagen a Storage (web): $e');
+            }
         } else if (!kIsWeb && data.imagenFile != null) {
-          final snap = await storageRef.putFile(data.imagenFile!);
-          data.imagenUrl = await snap.ref.getDownloadURL();
+          try {
+            final appDir = await getApplicationDocumentsDirectory();
+            final filename = 'profile_${uid}.jpg';
+            final savedPath = p.join(appDir.path, filename);
+            final savedFile = await data.imagenFile!.copy(savedPath);
+            data.imagenUrl = savedFile.path; // ruta local
+          } catch (e) {
+            debugPrint('Error guardando imagen localmente: $e');
+            // no bloquear el flujo; la imagen quedará sin url
+          }
         }
       }
-      await FirebaseFirestore.instance.collection('usuarios').doc(uid).update({
+      debugPrint('PerfilWizard: actualizando documento usuarios/$uid en Firestore...');
+      try {
+        await FirebaseFirestore.instance.collection('usuarios').doc(uid).update({
         'peso': data.peso,
         'altura': data.altura,
         'genero': data.genero,
@@ -220,13 +237,19 @@ class PerfilWizardController extends ChangeNotifier {
         'lesiones': data.lesionesProcesadas ?? [],
         'perfilCompleto': true,
         if (data.imagenUrl != null) 'imagen_url': data.imagenUrl,
-      });
-
+        });
+      } on FirebaseException catch (fe) {
+        debugPrint('PerfilWizard: FirebaseException al actualizar usuarios/$uid: code=${fe.code} message=${fe.message}');
+        rethrow;
+      }
+      debugPrint('PerfilWizard: documento actualizado. Intentando generar rutina...');
       // 2) Generar rutina automáticamente (reutiliza la lógica centralizada)
       try {
         await RutinaService.generarRutinaParaUsuario(uid);
       } catch (e) {
-        debugPrint('Generación de rutina falló: $e'); // no bloquear el guardado
+        debugPrint('Generación de rutina falló: $e');
+        // Propagar el error para que la UI pueda notificar al usuario.
+        rethrow;
       }
 
       // Limpiar persistencia local (ya completo)

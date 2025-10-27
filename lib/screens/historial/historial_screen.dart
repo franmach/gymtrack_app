@@ -232,26 +232,43 @@ class _HistorialScreenState extends State<HistorialScreen> {
                           const SizedBox(height: 8),
                           _construirResumenDesdeAnalisis(),
                           const Divider(height: 32),
-                          Row(
+                            Row(
                             children: [
                               Expanded(
-                                child: DropdownButton<int>(
-                                  value: tipoGrafica,
-                                  isExpanded: true,
-                                  items: const [
-                                    DropdownMenuItem(value: 0, child: Text('Progreso')),
-                                    DropdownMenuItem(value: 1, child: Text('Distribución')),
-                                    DropdownMenuItem(value: 2, child: Text('Comparativa')),
-                                    DropdownMenuItem(value: 3, child: Text('Volumen')),
-                                    DropdownMenuItem(value: 4, child: Text('PRs')),
-                                  ],
-                                  onChanged: (v) {
-                                    setState(() => tipoGrafica = v ?? 0);
-                                  },
+                              child: DropdownButton<int>(
+                                value: tipoGrafica,
+                                isExpanded: true,
+                                dropdownColor: Colors.black87,
+                                style: const TextStyle(color: Colors.white),
+                                items: const [
+                                DropdownMenuItem(
+                                  value: 0,
+                                  child: Text('Progreso', style: TextStyle(color: Colors.white)),
                                 ),
+                                DropdownMenuItem(
+                                  value: 1,
+                                  child: Text('Distribución', style: TextStyle(color: Colors.white)),
+                                ),
+                                DropdownMenuItem(
+                                  value: 2,
+                                  child: Text('Comparativa', style: TextStyle(color: Colors.white)),
+                                ),
+                                DropdownMenuItem(
+                                  value: 3,
+                                  child: Text('Volumen', style: TextStyle(color: Colors.white)),
+                                ),
+                                DropdownMenuItem(
+                                  value: 4,
+                                  child: Text('PRs', style: TextStyle(color: Colors.white)),
+                                ),
+                                ],
+                                onChanged: (v) {
+                                setState(() => tipoGrafica = v ?? 0);
+                                },
+                              ),
                               ),
                             ],
-                          ),
+                            ),
                           const SizedBox(height: 12),
                           _buildGraficaDinamica(),
  
