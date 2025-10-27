@@ -36,7 +36,14 @@ class _UsersAdminScreenState extends State<UsersAdminScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Gestión de Usuarios')),
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        title: const Text(
+          'Gestión de Usuarios',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.black,
+      ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: _col.orderBy('nombre', descending: false).snapshots(),
         builder: (context, snap) {
@@ -44,9 +51,7 @@ class _UsersAdminScreenState extends State<UsersAdminScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snap.hasError) {
-            return Center(
-              child: Text('Error al cargar: ${snap.error}'),
-            );
+            return Center(child: Text('Error al cargar: ${snap.error}'));
           }
           if (!snap.hasData || snap.data!.docs.isEmpty) {
             return const Center(child: Text('No hay usuarios registrados'));
@@ -92,36 +97,59 @@ class _UsersAdminScreenState extends State<UsersAdminScreen> {
             },
           );
 
+          // Layout estable y fluido
           return Column(
             children: [
               Padding(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                 child: TextField(
                   controller: _searchController,
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.search),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.search, color: Colors.white70),
                     hintText: 'Buscar por nombre o email...',
-                    border: OutlineInputBorder(),
+                    hintStyle: const TextStyle(color: Colors.white54),
+                    filled: true,
+                    fillColor: const Color(0xFF1A1A1A),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide:
+                          const BorderSide(color: Colors.white24, width: 1),
+                    ),
+                    isDense: true,
                   ),
-                  onChanged: _onSearchChanged, // 👈 debounce solo al tipear
+                  onChanged: _onSearchChanged,
                 ),
               ),
               Expanded(
                 child: SingleChildScrollView(
-                  child: PaginatedDataTable(
-                    header: const Text('Usuarios'),
-                    rowsPerPage: _rowsPerPage,
-                    onRowsPerPageChanged: (v) {
-                      if (v != null) setState(() => _rowsPerPage = v);
-                    },
-                    columns: const [
-                      DataColumn(label: Text('Nombre')),
-                      DataColumn(label: Text('Email')),
-                      DataColumn(label: Text('Teléfono')),
-                      DataColumn(label: Text('Activo')),
-                      DataColumn(label: Text('Acciones')),
-                    ],
-                    source: source,
+                  scrollDirection: Axis.horizontal,
+                  child: SizedBox(
+                    width: MediaQuery.of(context).size.width,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.vertical,
+                      child: PaginatedDataTable(
+                        header: const Text(
+                          'Usuarios',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        rowsPerPage: _rowsPerPage,
+                        onRowsPerPageChanged: (v) {
+                          if (v != null) setState(() => _rowsPerPage = v);
+                        },
+                        columnSpacing: 24,
+                        horizontalMargin: 16,
+                        showFirstLastButtons: true,
+                        columns: const [
+                          DataColumn(label: Text('Nombre')),
+                          DataColumn(label: Text('Email')),
+                          DataColumn(label: Text('Teléfono')),
+                          DataColumn(label: Text('Activo')),
+                          DataColumn(label: Text('Acciones')),
+                        ],
+                        source: source,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -130,13 +158,14 @@ class _UsersAdminScreenState extends State<UsersAdminScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFF4cff00),
         onPressed: () {
           showDialog(
             context: context,
             builder: (_) => const UserEditorDialog(),
           );
         },
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add, color: Colors.black),
       ),
     );
   }
@@ -172,6 +201,7 @@ class _UsersTableSource extends DataTableSource {
         DataCell(
           Switch(
             value: activo,
+            activeColor: const Color(0xFF4cff00),
             onChanged: (v) {
               FirebaseFirestore.instance
                   .collection('usuarios')
@@ -184,11 +214,11 @@ class _UsersTableSource extends DataTableSource {
           Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.edit),
+                icon: const Icon(Icons.edit, color: Colors.white),
                 onPressed: () => onEdit(d),
               ),
               IconButton(
-                icon: const Icon(Icons.delete),
+                icon: const Icon(Icons.delete, color: Colors.white),
                 onPressed: () => onDelete(d),
               ),
             ],
@@ -250,9 +280,7 @@ class _UserEditorDialogState extends State<UserEditorDialog> {
     _minPorSesion = TextEditingController(text: (widget.initial?['minPorSesion']?.toString() ?? ''));
     _objetivo = TextEditingController(text: widget.initial?['objetivo'] ?? '');
     _lesiones = TextEditingController(
-      text: (widget.initial?['lesiones'] as List<dynamic>?)
-              ?.join(', ') ??
-          '',
+      text: (widget.initial?['lesiones'] as List<dynamic>?)?.join(', ') ?? '',
     );
     _nivelExperiencia = widget.initial?['nivelExperiencia'] ?? 'Principiante (0–1 año)';
     _genero = widget.initial?['genero'] ?? 'Otro';
@@ -285,7 +313,8 @@ class _UserEditorDialogState extends State<UserEditorDialog> {
       'edad': int.tryParse(_edad.text.trim()) ?? 0,
       'peso': double.tryParse(_peso.text.trim()) ?? 0.0,
       'altura': double.tryParse(_altura.text.trim()) ?? 0.0,
-      'disponibilidadSemanal': int.tryParse(_disponibilidadSemanal.text.trim()) ?? 0,
+      'disponibilidadSemanal':
+          int.tryParse(_disponibilidadSemanal.text.trim()) ?? 0,
       'minPorSesion': int.tryParse(_minPorSesion.text.trim()) ?? 0,
       'nivelExperiencia': _nivelExperiencia,
       'objetivo': _objetivo.text.trim(),
@@ -296,6 +325,7 @@ class _UserEditorDialogState extends State<UserEditorDialog> {
           .where((e) => e.isNotEmpty)
           .toList(),
       'rol': _rol,
+      'role': _rol == 'admin' ? 'admin' : 'user',
       'activo': _activo,
       'updatedAt': FieldValue.serverTimestamp(),
     };
@@ -304,7 +334,7 @@ class _UserEditorDialogState extends State<UserEditorDialog> {
       if (widget.userId == null) {
         await _col.add(data);
       } else {
-        await _col.doc(widget.userId).update(data);
+        await _col.doc(widget.userId!).update(data);
       }
       if (mounted) Navigator.pop(context);
     } catch (e) {
@@ -317,7 +347,11 @@ class _UserEditorDialogState extends State<UserEditorDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.userId == null ? 'Nuevo Usuario' : 'Editar Usuario'),
+      backgroundColor: const Color(0xFF111111),
+      title: Text(
+        widget.userId == null ? 'Nuevo Usuario' : 'Editar Usuario',
+        style: const TextStyle(color: Colors.white),
+      ),
       content: Form(
         key: _formKey,
         child: SizedBox(
@@ -325,98 +359,38 @@ class _UserEditorDialogState extends State<UserEditorDialog> {
           child: SingleChildScrollView(
             child: Column(
               children: [
-                TextFormField(
-                  controller: _nombre,
-                  decoration: const InputDecoration(labelText: 'Nombre'),
-                  validator: (v) => v!.isEmpty ? 'Requerido' : null,
-                ),
-                TextFormField(
-                  controller: _apellido,
-                  decoration: const InputDecoration(labelText: 'Apellido'),
-                ),
-                TextFormField(
-                  controller: _email,
-                  decoration: const InputDecoration(labelText: 'Email'),
-                  validator: (v) =>
-                      (v == null || !v.contains('@')) ? 'Email inválido' : null,
-                ),
-                TextFormField(
-                  controller: _edad,
-                  decoration: const InputDecoration(labelText: 'Edad'),
-                  keyboardType: TextInputType.number,
-                ),
+                _field('Nombre', _nombre, required: true),
+                _field('Apellido', _apellido),
+                _field('Email', _email,
+                    required: true,
+                    validator: (v) =>
+                        (v == null || !v.contains('@')) ? 'Email inválido' : null),
+                _field('Edad', _edad, type: TextInputType.number),
                 Row(
                   children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _peso,
-                        decoration: const InputDecoration(labelText: 'Peso (kg)'),
-                        keyboardType: TextInputType.number,
-                      ),
-                    ),
+                    Expanded(child: _field('Peso (kg)', _peso, type: TextInputType.number)),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _altura,
-                        decoration: const InputDecoration(labelText: 'Altura (cm)'),
-                        keyboardType: TextInputType.number,
-                      ),
-                    ),
+                    Expanded(child: _field('Altura (cm)', _altura, type: TextInputType.number)),
                   ],
                 ),
-                TextFormField(
-                  controller: _disponibilidadSemanal,
-                  decoration:
-                      const InputDecoration(labelText: 'Disponibilidad semanal (días)'),
-                  keyboardType: TextInputType.number,
-                ),
-                TextFormField(
-                  controller: _minPorSesion,
-                  decoration: const InputDecoration(labelText: 'Minutos por sesión'),
-                  keyboardType: TextInputType.number,
-                ),
-                DropdownButtonFormField<String>(
-                  value: _nivelExperiencia,
-                  items: const [
-                    DropdownMenuItem(value: 'Principiante (0–1 año)', child: Text('Principiante (0–1 año)')),
-                    DropdownMenuItem(value: 'Intermedio (1–2 años)', child: Text('Intermedio (1–2 años)')),
-                    DropdownMenuItem(value: 'Avanzado (3+ años)', child: Text('Avanzado (3+ años)')),
-                  ],
-                  onChanged: (v) => setState(() => _nivelExperiencia = v ?? 'Principiante (0–1 año)'),
-                  decoration: const InputDecoration(labelText: 'Nivel de experiencia'),
-                ),
-                TextFormField(
-                  controller: _objetivo,
-                  decoration: const InputDecoration(labelText: 'Objetivo'),
-                ),
-                DropdownButtonFormField<String>(
-                  value: _genero,
-                  items: const [
-                    DropdownMenuItem(value: 'Masculino', child: Text('Masculino')),
-                    DropdownMenuItem(value: 'Femenino', child: Text('Femenino')),
-                    DropdownMenuItem(value: 'Otro', child: Text('Otro')),
-                  ],
-                  onChanged: (v) => setState(() => _genero = v ?? 'Otro'),
-                  decoration: const InputDecoration(labelText: 'Género'),
-                ),
-                TextFormField(
-                  controller: _lesiones,
-                  decoration: const InputDecoration(labelText: 'Lesiones (separadas por coma)'),
-                ),
-                DropdownButtonFormField<String>(
-                  value: _rol,
-                  items: const [
-                    DropdownMenuItem(value: 'alumno', child: Text('Alumno')),
-                    DropdownMenuItem(value: 'admin', child: Text('Administrador')),
-                    DropdownMenuItem(value: 'entrenador', child: Text('Entrenador')),
-                  ],
-                  onChanged: (v) => setState(() => _rol = v ?? 'alumno'),
-                  decoration: const InputDecoration(labelText: 'Rol'),
-                ),
+                _field('Disponibilidad semanal (días)', _disponibilidadSemanal,
+                    type: TextInputType.number),
+                _field('Minutos por sesión', _minPorSesion, type: TextInputType.number),
+                _dropdown('Nivel de experiencia', _nivelExperiencia, [
+                  'Principiante (0–1 año)',
+                  'Intermedio (1–3 años)',
+                  'Avanzado (3+ años)',
+                ], (v) => setState(() => _nivelExperiencia = v)),
+                _field('Objetivo', _objetivo),
+                _dropdown('Género', _genero, ['Masculino', 'Femenino', 'Otro'],
+                    (v) => setState(() => _genero = v)),
+                _field('Lesiones (separadas por coma)', _lesiones),
+                _dropdown('Rol', _rol, ['alumno', 'admin', 'entrenador'],
+                    (v) => setState(() => _rol = v)),
                 SwitchListTile(
                   value: _activo,
                   onChanged: (v) => setState(() => _activo = v),
-                  title: const Text('Activo'),
+                  title: const Text('Activo', style: TextStyle(color: Colors.white)),
                 ),
               ],
             ),
@@ -426,13 +400,70 @@ class _UserEditorDialogState extends State<UserEditorDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
+          child: const Text('Cancelar', style: TextStyle(color: Colors.white70)),
         ),
         ElevatedButton(
           onPressed: _save,
-          child: const Text('Guardar'),
+          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4cff00)),
+          child: const Text('Guardar', style: TextStyle(color: Colors.black)),
         ),
       ],
+    );
+  }
+
+  Widget _field(String label, TextEditingController ctrl,
+      {bool required = false,
+      TextInputType type = TextInputType.text,
+      String? Function(String?)? validator}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: TextFormField(
+        controller: ctrl,
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(color: Colors.white70),
+          enabledBorder: const OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.white24),
+          ),
+          focusedBorder: const OutlineInputBorder(
+            borderSide: BorderSide(color: Color(0xFF4cff00)),
+          ),
+        ),
+        keyboardType: type,
+        validator: validator ?? (required ? (v) => (v!.isEmpty ? 'Requerido' : null) : null),
+      ),
+    );
+  }
+
+  Widget _dropdown(
+      String label, String value, List<String> items, Function(String) onChanged) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: DropdownButtonFormField<String>(
+        value: value,
+        items: items
+            .map((v) => DropdownMenuItem(
+                  value: v,
+                  child: Text(v),
+                ))
+            .toList(),
+        onChanged: (v) {
+          if (v != null) onChanged(v);
+        },
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(color: Colors.white70),
+          enabledBorder: const OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.white24),
+          ),
+          focusedBorder: const OutlineInputBorder(
+            borderSide: BorderSide(color: Color(0xFF4cff00)),
+          ),
+        ),
+        dropdownColor: const Color(0xFF1A1A1A),
+        style: const TextStyle(color: Colors.white),
+      ),
     );
   }
 }

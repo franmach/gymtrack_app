@@ -143,6 +143,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             final bool perfilCompleto =
                 perfilCompletoFlag || _heuristicComplete(usuarioDoc);
 
+           
             if (perfilCompleto &&
                 !perfilCompletoFlag &&
                 !_profileAutoUpgraded) {

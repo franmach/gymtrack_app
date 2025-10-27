@@ -85,6 +85,8 @@ final ThemeData gymTrackTheme = ThemeData.dark().copyWith(
         fontSize: 24, fontWeight: FontWeight.bold, color: blanco),
     headlineMedium: GoogleFonts.orbitron(
         fontSize: 28, fontWeight: FontWeight.bold, color: blanco),
+    // Usado por InputDecorator/DropdownButtonFormField
+    titleMedium: GoogleFonts.rajdhani(fontSize: 16, color: blanco),
   ),
   appBarTheme: AppBarTheme(
     backgroundColor: Colors.transparent,
@@ -95,14 +97,5 @@ final ThemeData gymTrackTheme = ThemeData.dark().copyWith(
       color: blanco,
     ),
     iconTheme: const IconThemeData(color: blanco),
-  ),
-  // Removed dropdownButtonTheme because it's unavailable in the current Flutter SDK;
-  // use dropdownMenuTheme (Material 3) or apply styles directly to DropdownButton widgets.
-  dropdownMenuTheme: DropdownMenuThemeData(
-    menuStyle: const MenuStyle(
-      // Esto aplica sólo a DropdownMenu (M3), no a DropdownButton.
-      // Se deja por compatibilidad si migran a DropdownMenu.
-    ),
-    textStyle: GoogleFonts.rajdhani(color: blanco, fontSize: 16),
   ),
 );

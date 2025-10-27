@@ -40,7 +40,13 @@ Future<UserCredential> registrarConEmail({
       await _firestore
           .collection('usuarios')
           .doc(usuario.uid)
-          .set(usuario.toMap());
+          .set({
+            ...usuario.toMap(),
+            'rol': 'alumno', // compatibilidad interna
+            'role': 'user',  // campo estándar
+            'activo': true,
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
     } catch (e) {
       throw Exception('Error al guardar datos en Firestore: $e');
     }
