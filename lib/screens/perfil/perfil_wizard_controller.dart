@@ -7,6 +7,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart'; // <-- IMPORT NECESARIO PARA XFile
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import '../../services/ai_service.dart';
 import 'package:gymtrack_app/services/generar_rutina_service.dart';
 
@@ -193,20 +195,28 @@ class PerfilWizardController extends ChangeNotifier {
             await ai.analizarLesionesConGemini(data.textoLesiones!);
       }
 
-      // Subir imagen si corresponde
+      // Guardar imagen localmente (o subir en web) si corresponde
       if (data.imagenBytes != null || data.imagenFile != null) {
-        final storageRef = FirebaseStorage.instance
-            .ref()
-            .child('usuarios')
-            .child('$uid.jpg');
-
         if (kIsWeb && data.imagenBytes != null) {
+          // En web mantenemos subida a Storage (no cambiamos comportamiento web)
+          final storageRef = FirebaseStorage.instance
+              .ref()
+              .child('usuarios')
+              .child('$uid.jpg');
           final meta = SettableMetadata(contentType: 'image/jpeg');
           final snap = await storageRef.putData(data.imagenBytes!, meta);
           data.imagenUrl = await snap.ref.getDownloadURL();
         } else if (!kIsWeb && data.imagenFile != null) {
-          final snap = await storageRef.putFile(data.imagenFile!);
-          data.imagenUrl = await snap.ref.getDownloadURL();
+          try {
+            final appDir = await getApplicationDocumentsDirectory();
+            final filename = 'profile_${uid}.jpg';
+            final savedPath = p.join(appDir.path, filename);
+            final savedFile = await data.imagenFile!.copy(savedPath);
+            data.imagenUrl = savedFile.path; // ruta local
+          } catch (e) {
+            debugPrint('Error guardando imagen localmente: $e');
+            // no bloquear el flujo; la imagen quedará sin url
+          }
         }
       }
       await FirebaseFirestore.instance.collection('usuarios').doc(uid).update({

@@ -21,6 +21,8 @@ import 'package:gymtrack_app/services/ai_service.dart';
 import 'package:gymtrack_app/services/user_repository.dart';
 import 'dart:math';
 import 'dart:async';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:gymtrack_app/services/advice_service.dart';
 import 'package:intl/intl.dart';
 import 'package:gymtrack_app/gymtrack_theme.dart';
@@ -258,13 +260,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       Row(
                         children: [
-                          CircleAvatar(
-                            radius: 30,
-                            child: Text(
-                              displayName.substring(0, 1).toUpperCase(),
-                              style: const TextStyle(fontSize: 24),
-                            ),
-                          ),
+                          // Mostrar imagen de perfil si existe (remota o local).
+                          // Fallback: inicial del nombre.
+                          Builder(builder: (ctx) {
+                            final imagenUrl = (usuarioDoc['imagen_url'] ?? usuarioDoc['imagenUrl'])?.toString() ?? '';
+                            ImageProvider? provider;
+                            if (imagenUrl.isNotEmpty) {
+                              if (imagenUrl.startsWith('http')) {
+                                provider = NetworkImage(imagenUrl);
+                              } else {
+                                try {
+                                  var path = imagenUrl;
+                                  if (imagenUrl.startsWith('file://')) {
+                                    path = Uri.parse(imagenUrl).toFilePath();
+                                  }
+                                  if (!kIsWeb && File(path).existsSync()) {
+                                    provider = FileImage(File(path));
+                                  }
+                                } catch (_) {
+                                  provider = null;
+                                }
+                              }
+                            }
+
+                            return CircleAvatar(
+                              radius: 30,
+                              backgroundImage: provider,
+                              child: provider == null
+                                  ? Text(
+                                      displayName.substring(0, 1).toUpperCase(),
+                                      style: const TextStyle(fontSize: 24),
+                                    )
+                                  : null,
+                            );
+                          }),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
