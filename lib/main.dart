@@ -29,6 +29,8 @@ Future<void> main() async {
   await Hive.initFlutter();
   await Hive.openBox('gt_reminders');
   await Hive.openBox('gt_prefs');
+  // Inicializar servicio offline (abre el box 'offline_routines')
+  await OfflineService.init();
   AwesomeNotifications().initialize(
     null,
     [

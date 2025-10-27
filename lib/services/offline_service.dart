@@ -22,15 +22,23 @@ class OfflineService {
   }
 
   static Map<String, dynamic>? getRoutine(String userId) {
-    final box = Hive.box(_routineBoxName);
-    final data = box.get(userId) as Map?;
+    try {
+      final box = Hive.box(_routineBoxName);
+      final data = box.get(userId) as Map?;
 
-    if (data == null) return null;
+      if (data == null) return null;
 
-    return {
-      'routine': data['routine'],
-      'lastUpdated': data['lastUpdated'],
-    };
+      return {
+        'routine': data['routine'],
+        'lastUpdated': data['lastUpdated'],
+      };
+    } catch (e) {
+      // Si el box no está abierto o hay cualquier error de Hive, devolvemos null
+      // para que la app pueda continuar en modo online o mostrar un mensaje.
+      // No usamos debugPrint aquí para evitar dependencias de Flutter en este servicio.
+      print('OfflineService.getRoutine: box no disponible: $e');
+      return null;
+    }
   }
 
   static Future<void> clearRoutine(String userId) async {

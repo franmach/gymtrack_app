@@ -80,11 +80,58 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   .doc(uid)
                   .snapshots(),
               builder: (context, snapshot) {
+                // Manejo de errores: si la consulta tiene un error (p.ej. permisos), mostramos mensaje
+                if (snapshot.hasError) {
+                  final err = snapshot.error;
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                          const SizedBox(height: 12),
+                          const Text('Error al cargar perfil', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 8),
+                          Text(err.toString(), textAlign: TextAlign.center),
+                          const SizedBox(height: 12),
+                          ElevatedButton(
+                            onPressed: () => setState(() {}),
+                            child: const Text('Reintentar'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final userData = snapshot.data?.data() as Map<String, dynamic>?;
+                final docSnap = snapshot.data;
+                if (docSnap == null || !docSnap.exists) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.person_outline, size: 48),
+                          const SizedBox(height: 8),
+                          const Text('Perfil no encontrado.'),
+                          const SizedBox(height: 8),
+                          ElevatedButton(
+                            onPressed: () => setState(() {}),
+                            child: const Text('Reintentar'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                final userData = docSnap.data() as Map<String, dynamic>?;
                 // query para sesiones del último mes (reactivo)
                 final desde = DateTime.now().subtract(const Duration(days: 30));
                 final sesionesMesQuery = FirebaseFirestore.instance

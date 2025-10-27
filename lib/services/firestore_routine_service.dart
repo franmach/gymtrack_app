@@ -16,7 +16,10 @@ class FirestoreRoutineService implements RoutineService {
           .limit(1)
           .get();
 
-      if (query.docs.isEmpty) return [];
+      if (query.docs.isEmpty) {
+        print('❌ No se encontró rutina actual para userId=$userId');
+        return [];
+      }
 
       final rutinaData = query.docs.first.data();
 
@@ -25,6 +28,9 @@ class FirestoreRoutineService implements RoutineService {
 
       final diasRaw = (rutinaData['rutina'] as List<dynamic>);
       return diasRaw.map((d) => d['dia'] as String).toList();
+    } on FirebaseException catch (fe) {
+      print('❌ Error Firestore al obtener rutina para userId=$userId: code=${fe.code} message=${fe.message}');
+      return [];
     } catch (e) {
       print('❌ Error al obtener rutina: $e');
       return [];
@@ -42,7 +48,10 @@ class FirestoreRoutineService implements RoutineService {
           .limit(1)
           .get();
 
-      if (query.docs.isEmpty) return [];
+      if (query.docs.isEmpty) {
+        print('❌ No se encontró rutina actual para userId=$userId (fetchExercisesForDay)');
+        return [];
+      }
 
       final rutinaData = query.docs.first.data();
 
@@ -62,6 +71,9 @@ class FirestoreRoutineService implements RoutineService {
       return ejerciciosRaw
           .map((ej) => EjercicioAsignado.fromMap(ej as Map<String, dynamic>))
           .toList();
+    } on FirebaseException catch (fe) {
+      print('❌ Error Firestore al obtener ejercicios para userId=$userId day=$day: code=${fe.code} message=${fe.message}');
+      return [];
     } catch (e) {
       print('❌ Error al obtener ejercicios: $e');
       return [];

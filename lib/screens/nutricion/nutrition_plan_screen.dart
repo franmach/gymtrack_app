@@ -68,16 +68,10 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
   Future<void> _loadExistingPlan() async {
     final uid = _auth.currentUser!.uid;
 
-    // Buscar el último plan para el usuario actual
-    final snapshot = await _firestore
-        .collection('nutritionPlans')
-        .where('usuarioId', isEqualTo: uid)
-        .orderBy('fechaCreacion', descending: true)
-        .limit(1)
-        .get();
-
-    if (snapshot.docs.isNotEmpty) {
-      final plan = PlanAlimenticio.fromMap(snapshot.docs.first.data());
+    // Leer plan por documento: nutrition_plans/{uid}
+    final doc = await _firestore.collection('nutrition_plans').doc(uid).get();
+    if (doc.exists && doc.data() != null) {
+      final plan = PlanAlimenticio.fromMap(doc.data()!);
 
       setState(() {
         isVegetarian = plan.isVegetarian;
@@ -129,8 +123,8 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
   Future<void> _savePlan() async {
     final uid = _auth.currentUser!.uid;
 
-    // Usamos el UID como ID de documento para que siempre se sobreescriba el plan actual
-    final docRef = _firestore.collection('nutritionPlans').doc(uid);
+  // Usamos el UID como ID de documento para que siempre se sobreescriba el plan actual
+  final docRef = _firestore.collection('nutrition_plans').doc(uid);
 
     final plan = PlanAlimenticio(
       id: docRef.id,

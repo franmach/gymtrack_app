@@ -638,6 +638,11 @@ class _EducationCardState extends State<EducationCard> {
       return advices[rnd.nextInt(advices.length)];
     } catch (e) {
       debugPrint('Error fetching advices: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No fue posible cargar contenido educativo: $e')),
+        );
+      }
       return null;
     }
   }
