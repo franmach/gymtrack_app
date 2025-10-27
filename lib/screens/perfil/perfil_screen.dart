@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:gymtrack_app/screens/rutina/mis_rutinas_screen.dart';
+import 'package:gymtrack_app/screens/auth/login_screen.dart';
 import 'package:intl/intl.dart';
 
 import '../../services/gamification_repository.dart';
@@ -56,7 +58,16 @@ class _PerfilScreenState extends State<PerfilScreen> {
             IconButton(
               icon: const Icon(Icons.logout),
               onPressed: () async {
-                await FirebaseAuth.instance.signOut();
+                try {
+                  await FirebaseAuth.instance.signOut();
+                } catch (e) {
+                  // no bloquear la navegación por un fallo al cerrar sesión
+                }
+                // Llevar al LoginScreen y limpiar la pila
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  (route) => false,
+                );
               },
             ),
         ],
@@ -137,11 +148,26 @@ class _PerfilScreenState extends State<PerfilScreen> {
                           children: [
                             CircleAvatar(
                               radius: 52,
-                              backgroundImage: imagenUrl.isNotEmpty
-                                  ? NetworkImage(imagenUrl)
-                                  : const AssetImage(
-                                          'assets/images/profile_placeholder.png')
-                                      as ImageProvider,
+                              backgroundImage: () {
+                                if (imagenUrl == null || imagenUrl.isEmpty) {
+                                  return const AssetImage('assets/images/profile_placeholder.png') as ImageProvider;
+                                }
+                                // URL remota
+                                if (imagenUrl.startsWith('http')) {
+                                  return NetworkImage(imagenUrl);
+                                }
+                                // ruta local (file:// o path)
+                                try {
+                                  String path = imagenUrl;
+                                  if (imagenUrl.startsWith('file://')) {
+                                    path = Uri.parse(imagenUrl).toFilePath();
+                                  }
+                                  final f = File(path);
+                                  if (f.existsSync()) return FileImage(f);
+                                } catch (_) {}
+                                // fallback
+                                return const AssetImage('assets/images/profile_placeholder.png') as ImageProvider;
+                              }(),
                             ),
                             const SizedBox(height: 12),
                             Text(nombre,
@@ -526,6 +552,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
         return Column(
           children: logros.map((l) {
             final otorgado = l.otorgadoEn;
+            final subtitleText = l.descripcion + '\n${dateFmt.format(otorgado)}';
             return Card(
               child: ListTile(
                 leading: l.badge != null
@@ -535,8 +562,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         child: Image.asset(l.badge!, fit: BoxFit.contain))
                     : const Icon(Icons.emoji_events, color: Color(0xFF4CFF00)),
                 title: Text(l.nombre),
-                subtitle: Text(
-                    '${l.descripcion}\n${otorgado != null ? dateFmt.format(otorgado) : ''}'),
+                subtitle: Text(subtitleText),
                 isThreeLine: true,
                 trailing: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -566,6 +592,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
 
   /// Si stats ya contiene sesionesMes/minutosMes devuelve inmediatamente,
   /// si no, consulta las sesiones del último mes y suma duración y cuenta.
+  // ignore: unused_element
   Future<Map<String, int>> _computeMonthlyStatsIfNeeded(
       String? uid, Map<String, dynamic> stats) async {
     if (uid == null) return {'sesionesMes': 0, 'minutosMes': 0};
@@ -588,7 +615,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
     int sesiones = 0;
     int minutos = 0;
     for (final d in snap.docs) {
-      final data = d.data() as Map<String, dynamic>;
+      final data = d.data();
       sesiones += 1;
       final rawDur = data['duracionMin'] ?? data['durationMin'] ?? 0;
       if (rawDur is num) {
