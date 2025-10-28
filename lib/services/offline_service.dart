@@ -1,4 +1,5 @@
 import 'package:hive/hive.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// -----------------------------------------
 /// OFFLINE SERVICE
@@ -8,19 +9,29 @@ import 'package:hive/hive.dart';
 class OfflineService {
   static const String _routineBoxName = 'offline_routines';
 
+  /// Inicializa Hive para rutinas (llamar al inicio de la app)
   static Future<void> init() async {
-    // 🔹 Abrimos el box al inicio de la app
     await Hive.openBox(_routineBoxName);
   }
 
+  /// Guarda una rutina en Hive, convirtiendo los Timestamps de Firestore.
   static Future<void> saveRoutine(String userId, Map<String, dynamic> routineData) async {
-    final box = Hive.box(_routineBoxName);
-    await box.put(userId, {
-      'routine': routineData,
-      'lastUpdated': DateTime.now().toIso8601String(),
-    });
+    try {
+      final box = Hive.box(_routineBoxName);
+
+      // 🔹 Sanitizar datos antes de guardar
+      final sanitized = _sanitizeFirestoreData(routineData);
+
+      await box.put(userId, {
+        'routine': sanitized,
+        'lastUpdated': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      print('OfflineService.saveRoutine: error al guardar -> $e');
+    }
   }
 
+  /// Recupera la rutina guardada offline
   static Map<String, dynamic>? getRoutine(String userId) {
     try {
       final box = Hive.box(_routineBoxName);
@@ -33,17 +44,33 @@ class OfflineService {
         'lastUpdated': data['lastUpdated'],
       };
     } catch (e) {
-      // Si el box no está abierto o hay cualquier error de Hive, devolvemos null
-      // para que la app pueda continuar en modo online o mostrar un mensaje.
-      // No usamos debugPrint aquí para evitar dependencias de Flutter en este servicio.
-      print('OfflineService.getRoutine: box no disponible: $e');
+      print('OfflineService.getRoutine: box no disponible -> $e');
       return null;
     }
   }
 
+  /// Limpia la rutina guardada de un usuario
   static Future<void> clearRoutine(String userId) async {
-    final box = Hive.box(_routineBoxName);
-    await box.delete(userId);
+    try {
+      final box = Hive.box(_routineBoxName);
+      await box.delete(userId);
+    } catch (e) {
+      print('OfflineService.clearRoutine: error -> $e');
+    }
+  }
+
+  /// 🔧 Convierte Timestamps y DateTime a tipos serializables (String)
+  static dynamic _sanitizeFirestoreData(dynamic data) {
+    if (data is Timestamp) {
+      return data.toDate().toIso8601String();
+    } else if (data is DateTime) {
+      return data.toIso8601String();
+    } else if (data is Map) {
+      return data.map((key, value) => MapEntry(key, _sanitizeFirestoreData(value)));
+    } else if (data is List) {
+      return data.map((e) => _sanitizeFirestoreData(e)).toList();
+    } else {
+      return data;
+    }
   }
 }
-

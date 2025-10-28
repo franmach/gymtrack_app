@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:gymtrack_app/screens/auth/login_screen.dart';
 
 /// Pantalla de Administración de Rutinas (por usuario)
 class RoutinesAdminScreen extends StatefulWidget {
@@ -16,11 +15,10 @@ class _RoutinesAdminScreenState extends State<RoutinesAdminScreen> {
   final _routinesCol = FirebaseFirestore.instance.collection('rutinas');
 
   String _userQuery = '';
-  final _expandedUsers = <String>{}; // userIds expandidos
+  final _expandedUsers = <String>{};
 
   @override
   Widget build(BuildContext context) {
-        final User? user = FirebaseAuth.instance.currentUser;
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -30,7 +28,7 @@ class _RoutinesAdminScreenState extends State<RoutinesAdminScreen> {
       ),
       body: Column(
         children: [
-          // Buscador de usuarios
+          // Buscador
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: TextField(
@@ -52,7 +50,7 @@ class _RoutinesAdminScreenState extends State<RoutinesAdminScreen> {
             ),
           ),
 
-          // Lista de usuarios (con expansión para ver rutinas)
+          // Lista de usuarios
           Expanded(
             child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
               stream: _usersCol.snapshots(),
@@ -62,16 +60,17 @@ class _RoutinesAdminScreenState extends State<RoutinesAdminScreen> {
                 }
                 if (snap.hasError) {
                   return Center(
-                      child: Text('Error: ${snap.error}',
-                          style: const TextStyle(color: Colors.red)));
+                    child: Text('Error: ${snap.error}',
+                        style: const TextStyle(color: Colors.red)),
+                  );
                 }
                 if (!snap.hasData || snap.data!.docs.isEmpty) {
                   return const Center(
-                      child: Text('No hay usuarios',
-                          style: TextStyle(color: Colors.white70)));
+                    child: Text('No hay usuarios',
+                        style: TextStyle(color: Colors.white70)),
+                  );
                 }
 
-                // Ordenar por username/nombre (cliente) y filtrar por búsqueda
                 final users = snap.data!.docs.toList()
                   ..sort((a, b) {
                     final ma = a.data();
@@ -88,10 +87,10 @@ class _RoutinesAdminScreenState extends State<RoutinesAdminScreen> {
                 final filtered = users.where((d) {
                   if (_userQuery.isEmpty) return true;
                   final m = d.data();
-                  final userLabel = (m['username'] ?? m['nombre'] ?? '')
+                  final label = (m['username'] ?? m['nombre'] ?? '')
                       .toString()
                       .toLowerCase();
-                  return userLabel.contains(_userQuery);
+                  return label.contains(_userQuery);
                 }).toList();
 
                 return ListView.separated(
@@ -113,11 +112,9 @@ class _RoutinesAdminScreenState extends State<RoutinesAdminScreen> {
                         initiallyExpanded: isExpanded,
                         onExpansionChanged: (open) {
                           setState(() {
-                            if (open) {
-                              _expandedUsers.add(userId);
-                            } else {
-                              _expandedUsers.remove(userId);
-                            }
+                            open
+                                ? _expandedUsers.add(userId)
+                                : _expandedUsers.remove(userId);
                           });
                         },
                         tilePadding: const EdgeInsets.symmetric(horizontal: 16),
@@ -134,7 +131,7 @@ class _RoutinesAdminScreenState extends State<RoutinesAdminScreen> {
                                 style: const TextStyle(color: Colors.white54))
                             : null,
                         children: [
-                          // Botón crear nueva rutina para este usuario
+                          // Crear nueva rutina
                           Align(
                             alignment: Alignment.centerLeft,
                             child: Padding(
@@ -149,16 +146,15 @@ class _RoutinesAdminScreenState extends State<RoutinesAdminScreen> {
                                 onPressed: () {
                                   showDialog(
                                     context: context,
-                                    builder: (_) => RoutineEditorDialog(
-                                      userId: userId,
-                                    ),
+                                    builder: (_) =>
+                                        RoutineEditorDialog(userId: userId),
                                   );
                                 },
                               ),
                             ),
                           ),
 
-                          // Lista de rutinas del usuario
+                          // Lista de rutinas
                           StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                             stream: _routinesCol
                                 .where('uid', isEqualTo: userId)
@@ -180,6 +176,7 @@ class _RoutinesAdminScreenState extends State<RoutinesAdminScreen> {
                                           color: Colors.redAccent)),
                                 );
                               }
+
                               final rDocs = rSnap.data?.docs ?? [];
                               if (rDocs.isEmpty) {
                                 return const Padding(
@@ -196,8 +193,6 @@ class _RoutinesAdminScreenState extends State<RoutinesAdminScreen> {
                                 itemBuilder: (context, idx) {
                                   final rDoc = rDocs[idx];
                                   final r = rDoc.data();
-                                  final nombre = (r['nombre'] ?? '(Sin nombre)')
-                                      .toString();
                                   final objetivo =
                                       (r['objetivo'] ?? '').toString();
                                   final nivel = (r['nivel'] ?? '').toString();
@@ -210,7 +205,7 @@ class _RoutinesAdminScreenState extends State<RoutinesAdminScreen> {
                                     margin: const EdgeInsets.fromLTRB(
                                         16, 0, 16, 12),
                                     child: ListTile(
-                                      title: Text(nombre,
+                                      title: Text('Rutina ${idx + 1}',
                                           style: const TextStyle(
                                               color: Colors.white,
                                               fontWeight: FontWeight.w600)),
@@ -257,9 +252,9 @@ class _RoutinesAdminScreenState extends State<RoutinesAdminScreen> {
                                                       'Eliminar rutina',
                                                       style: TextStyle(
                                                           color: Colors.white)),
-                                                  content: Text(
-                                                    '¿Seguro que deseas eliminar la rutina "$nombre"?',
-                                                    style: const TextStyle(
+                                                  content: const Text(
+                                                    '¿Seguro que deseas eliminar esta rutina?',
+                                                    style: TextStyle(
                                                         color: Colors.white70),
                                                   ),
                                                   actions: [
@@ -321,7 +316,7 @@ class _RoutinesAdminScreenState extends State<RoutinesAdminScreen> {
   }
 }
 
-/// Diálogo de creación/edición de una rutina
+/// Diálogo de edición/creación de rutina sin campo nombre
 class RoutineEditorDialog extends StatefulWidget {
   final String userId;
   final String? routineId;
@@ -342,7 +337,6 @@ class _RoutineEditorDialogState extends State<RoutineEditorDialog> {
   final _formKey = GlobalKey<FormState>();
   final _col = FirebaseFirestore.instance.collection('rutinas');
 
-  late final TextEditingController _nombre;
   late final TextEditingController _objetivo;
   String _nivel = 'Principiante (0–1 año)';
   int _diasPorSemana = 3;
@@ -351,9 +345,9 @@ class _RoutineEditorDialogState extends State<RoutineEditorDialog> {
   @override
   void initState() {
     super.initState();
-    _nombre = TextEditingController(text: widget.initial?['nombre'] ?? '');
     _objetivo = TextEditingController(text: widget.initial?['objetivo'] ?? '');
     _nivel = widget.initial?['nivel'] ?? 'Principiante (0–1 año)';
+
     final rawDias = widget.initial?['dias_por_semana'];
     if (rawDias is int) {
       _diasPorSemana = rawDias;
@@ -362,6 +356,7 @@ class _RoutineEditorDialogState extends State<RoutineEditorDialog> {
     } else {
       _diasPorSemana = 3;
     }
+
     final rutinaRaw = widget.initial?['rutina'];
     if (rutinaRaw is List) {
       _rutina = rutinaRaw.map((r) => Map<String, dynamic>.from(r)).toList();
@@ -372,7 +367,6 @@ class _RoutineEditorDialogState extends State<RoutineEditorDialog> {
 
   @override
   void dispose() {
-    _nombre.dispose();
     _objetivo.dispose();
     super.dispose();
   }
@@ -409,38 +403,53 @@ class _RoutineEditorDialogState extends State<RoutineEditorDialog> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // --- Normalizamos estructura de rutina ---
+    final rutinaLimpia = _rutina
+        .where((r) => (r['dia'] ?? '').toString().trim().isNotEmpty)
+        .map((r) {
+      final ejercicios = (r['ejercicios'] ?? []) as List;
+      return {
+        'dia': r['dia'] ?? '',
+        'ejercicios': ejercicios
+            .where((e) => (e['nombre'] ?? '').toString().trim().isNotEmpty)
+            .map((e) => {
+                  'nombre': e['nombre'] ?? '',
+                  'series': e['series'] ?? 0,
+                  'repeticiones': e['repeticiones'] ?? '',
+                  'grupo_muscular': e['grupo_muscular'] ?? '',
+                  'peso': e['peso'] ?? 0,
+                  'descanso_segundos': e['descanso_segundos'] ?? 60,
+                })
+            .toList(),
+      };
+    }).toList();
+
+    // --- Datos base ---
     final data = {
       'uid': widget.userId,
-      'nombre': _nombre.text.trim(),
       'objetivo': _objetivo.text.trim(),
       'nivel': _nivel,
       'dias_por_semana': _diasPorSemana,
-      'rutina': _rutina.map((r) {
-        final ejercicios = (r['ejercicios'] ?? []) as List;
-        return {
-          'dia': r['dia'] ?? '',
-          'ejercicios': ejercicios.map((e) {
-            return {
-              'nombre': e['nombre'] ?? '',
-              'series': e['series'] ?? 0,
-              'repeticiones': e['repeticiones'] ?? '',
-              'grupo_muscular': e['grupo_muscular'] ?? '',
-              'descanso_segundos': e['descanso_segundos'] ?? 60,
-            };
-          }).toList(),
-        };
-      }).toList(),
+      'rutina': rutinaLimpia,
       'updatedAt': FieldValue.serverTimestamp(),
-      if (widget.routineId == null) 'createdAt': FieldValue.serverTimestamp(),
     };
 
+    // --- Si es nueva, generamos ID manual ---
+    final docRef = widget.routineId != null
+        ? _col.doc(widget.routineId)
+        : _col.doc(); // ID manual para evitar "add()" (que crea ID aleatorio)
+
     if (widget.routineId == null) {
-      // Crear nueva rutina
-      await _col.add(data);
-    } else {
-      // Actualizar existente
-      await _col.doc(widget.routineId!).update(data);
+      data['createdAt'] = FieldValue.serverTimestamp();
     }
+
+    await docRef.set(data, SetOptions(merge: true));
+
+    // --- Guardamos el ID de rutina actual en el usuario ---
+    await FirebaseFirestore.instance
+        .collection('usuarios')
+        .doc(widget.userId)
+        .set({'rutina_actual_id': docRef.id}, SetOptions(merge: true));
 
     if (mounted) Navigator.pop(context);
   }
@@ -459,7 +468,6 @@ class _RoutineEditorDialogState extends State<RoutineEditorDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _field('Nombre', _nombre, required: true),
               _field('Objetivo', _objetivo),
               _dropdown(
                 'Nivel',
@@ -487,14 +495,11 @@ class _RoutineEditorDialogState extends State<RoutineEditorDialog> {
                 ),
               ),
               const SizedBox(height: 8),
-
-              // Listado de días
               ..._rutina.asMap().entries.map((entry) {
                 final diaIndex = entry.key;
                 final diaData = entry.value;
                 final ejercicios = List<Map<String, dynamic>>.from(
                     diaData['ejercicios'] ?? []);
-
                 return Card(
                   color: const Color(0xFF1A1A1A),
                   margin: const EdgeInsets.symmetric(vertical: 6),
@@ -503,7 +508,6 @@ class _RoutineEditorDialogState extends State<RoutineEditorDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Encabezado del día
                         Row(
                           children: [
                             Expanded(
@@ -535,8 +539,6 @@ class _RoutineEditorDialogState extends State<RoutineEditorDialog> {
                           ],
                         ),
                         const SizedBox(height: 8),
-
-                        // Ejercicios del día
                         ...ejercicios.asMap().entries.map((eEntry) {
                           final exIndex = eEntry.key;
                           final ex = eEntry.value;
@@ -587,8 +589,19 @@ class _RoutineEditorDialogState extends State<RoutineEditorDialog> {
                                       icon: const Icon(Icons.delete,
                                           color: Colors.redAccent),
                                       tooltip: 'Eliminar ejercicio',
-                                      onPressed: () => setState(
-                                          () => ejercicios.removeAt(exIndex)),
+                                      onPressed: () {
+                                        setState(() {
+                                          // 🔹 Actualiza la estructura original de la rutina
+                                          final updatedEjercicios =
+                                              List<Map<String, dynamic>>.from(
+                                                  _rutina[diaIndex]
+                                                          ['ejercicios'] ??
+                                                      []);
+                                          updatedEjercicios.removeAt(exIndex);
+                                          _rutina[diaIndex]['ejercicios'] =
+                                              updatedEjercicios;
+                                        });
+                                      },
                                     ),
                                   ),
                                 ],
@@ -596,8 +609,6 @@ class _RoutineEditorDialogState extends State<RoutineEditorDialog> {
                             ),
                           );
                         }),
-
-                        // Botón agregar ejercicio
                         Align(
                           alignment: Alignment.centerLeft,
                           child: TextButton.icon(
@@ -612,8 +623,6 @@ class _RoutineEditorDialogState extends State<RoutineEditorDialog> {
                   ),
                 );
               }),
-
-              // Botón agregar día
               const SizedBox(height: 12),
               TextButton.icon(
                 icon: const Icon(Icons.add, color: Colors.white),
@@ -641,7 +650,6 @@ class _RoutineEditorDialogState extends State<RoutineEditorDialog> {
     );
   }
 
-  // Helpers de UI
   Widget _field(String label, TextEditingController ctrl,
       {bool required = false,
       TextInputType type = TextInputType.text,
@@ -745,107 +753,4 @@ class _RoutineEditorDialogState extends State<RoutineEditorDialog> {
       ),
     );
   }
-}
-// ---------- UI helpers ----------
-
-Widget _field(String label, TextEditingController ctrl,
-    {bool required = false,
-    TextInputType type = TextInputType.text,
-    String? Function(String?)? validator}) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 6),
-    child: TextFormField(
-      controller: ctrl,
-      style: const TextStyle(color: Colors.white),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.white70),
-        enabledBorder: const OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.white24),
-        ),
-        focusedBorder: const OutlineInputBorder(
-          borderSide: BorderSide(color: Color(0xFF4cff00)),
-        ),
-      ),
-      keyboardType: type,
-      validator: validator ??
-          (required ? (v) => (v!.isEmpty ? 'Requerido' : null) : null),
-    ),
-  );
-}
-
-Widget _dropdown(String label, String value, List<String> items,
-    Function(String) onChanged) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 6),
-    child: DropdownButtonFormField<String>(
-      value: items.contains(value) ? value : null,
-      items:
-          items.map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
-      onChanged: (v) {
-        if (v != null) onChanged(v);
-      },
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.white70),
-        enabledBorder: const OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.white24),
-        ),
-        focusedBorder: const OutlineInputBorder(
-          borderSide: BorderSide(color: Color(0xFF4cff00)),
-        ),
-      ),
-      dropdownColor: const Color(0xFF1A1A1A),
-      style: const TextStyle(color: Colors.white),
-    ),
-  );
-}
-
-Widget _dropdownInt(String label, int value, int max, Function(int) onChanged) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 6),
-    child: DropdownButtonFormField<int>(
-      value: value.clamp(1, max),
-      items: List.generate(
-          max, (i) => DropdownMenuItem(value: i + 1, child: Text('${i + 1}'))),
-      onChanged: (v) {
-        if (v != null) onChanged(v);
-      },
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.white70),
-        enabledBorder: const OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.white24),
-        ),
-        focusedBorder: const OutlineInputBorder(
-          borderSide: BorderSide(color: Color(0xFF4cff00)),
-        ),
-      ),
-      dropdownColor: const Color(0xFF1A1A1A),
-      style: const TextStyle(color: Colors.white),
-    ),
-  );
-}
-
-Widget _innerField(String label, String value, Function(String) onChanged,
-    {bool number = false}) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4),
-    child: TextFormField(
-      initialValue: value,
-      style: const TextStyle(color: Colors.white),
-      keyboardType: number ? TextInputType.number : TextInputType.text,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.white70),
-        enabledBorder: const OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.white24),
-        ),
-        focusedBorder: const OutlineInputBorder(
-          borderSide: BorderSide(color: Color(0xFF4cff00)),
-        ),
-      ),
-      onChanged: onChanged,
-    ),
-  );
 }
