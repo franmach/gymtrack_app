@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gymtrack_app/services/auth_service.dart';
 import 'package:gymtrack_app/models/usuario_basico.dart';
 import 'package:gymtrack_app/screens/perfil/perfil_wizard_screen.dart';
+
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -30,6 +31,43 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return edad;
   }
 
+  // Helper local para SnackBars estilizados
+  void _showSnack(String text,
+      {required Color bg,
+      IconData? icon,
+      Duration duration = const Duration(seconds: 3)}) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) Icon(icon, color: Colors.black),
+              if (icon != null) const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  text,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: bg,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          duration: duration,
+        ),
+      );
+  }
+
   void _registrarUsuario() async {
     final esValido = _registerKey.currentState!.validate();
     if (!esValido) return;
@@ -37,10 +75,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _registerKey.currentState!.save();
 
     if (fechaNacimiento == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Debes seleccionar tu fecha de nacimiento'),
-        ),
+      _showSnack(
+        'Debes seleccionar tu fecha de nacimiento',
+        bg: Colors.amberAccent,
+        icon: Icons.info_outline,
       );
       return;
     }
@@ -57,9 +95,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (edadCalculada < 10) {
         setState(() {
-          errorFechaNacimiento =
-              'Debes tener al menos 10 años para registrarte.';
+          errorFechaNacimiento = 'Debes tener al menos 10 años para registrarte.';
         });
+        _showSnack(
+          errorFechaNacimiento!,
+          bg: Colors.amberAccent,
+          icon: Icons.warning_amber_rounded,
+        );
         return;
       } else {
         setState(() {
@@ -80,9 +122,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       await authService.guardarUsuarioBasico(usuarioBasico);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Registro exitoso')),
-      );
+      _showSnack('Registro exitoso', bg: Colors.lightGreenAccent, icon: Icons.check);
 
       await Future.delayed(const Duration(seconds: 1));
 
@@ -92,9 +132,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
     } catch (e) {
       final errorMsg = e.toString().replaceAll('Exception: ', '');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMsg)),
-      );
+      _showSnack(errorMsg, bg: Colors.redAccent, icon: Icons.error_outline);
     }
   }
 

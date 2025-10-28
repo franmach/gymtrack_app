@@ -5,6 +5,7 @@ import 'package:gymtrack_app/screens/dashboard/dashboard_screen.dart';
 import 'package:gymtrack_app/screens/admin/admin_hub_screen.dart';
 import 'package:gymtrack_app/screens/auth/forgotPassword_screen.dart';
 import 'package:gymtrack_app/screens/auth/register_screen.dart';
+import 'package:gymtrack_app/screens/main_tabbed_screen.dart';
 
 /// Pantalla de Login con Firebase Auth y navegación al Dashboard
 class LoginScreen extends StatefulWidget {
@@ -15,26 +16,60 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // Key para identificar y validar el formulario
   final _formKey = GlobalKey<FormState>();
-
-  // Controladores para leer el texto ingresado
   final TextEditingController _emailCtrl = TextEditingController();
   final TextEditingController _passCtrl = TextEditingController();
-
-  // Estado de carga y mensaje de error
   bool _loading = false;
   String? _errorMessage;
 
-  /// Se dispara al presionar "Entrar"
-  Future<void> _submit() async {
-    // 1) Validamos el formulario
-    if (!_formKey.currentState!.validate()) return;
+  // SnackBar estilizado local
+  void _showSnack(
+    String text, {
+    required Color bg,
+    IconData? icon,
+    Duration duration = const Duration(seconds: 3),
+  }) {
+    if (!mounted) return; // <-- evita usar context si ya fue desmontado
+    final messenger = ScaffoldMessenger.of(context);
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) Icon(icon, color: Colors.black),
+              if (icon != null) const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  text,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: bg,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          duration: duration,
+        ),
+      );
+  }
 
-    setState(() {
-      _loading = true;
-      _errorMessage = null;
-    });
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) {
+      _showSnack('Revisá los campos', bg: Colors.amberAccent, icon: Icons.info_outline);
+      return;
+    }
+    setState(() { _loading = true; _errorMessage = null; });
 
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
@@ -42,37 +77,27 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _passCtrl.text,
       );
 
-      if (!mounted) return;
+      if (!mounted) return; // <-- chequeo extra tras await
 
       final uid = FirebaseAuth.instance.currentUser!.uid;
-      final ref = FirebaseFirestore.instance.collection('usuarios').doc(uid);
-      final snap = await ref.get();
+      final doc = await FirebaseFirestore.instance.collection('usuarios').doc(uid).get();
+      final data = doc.data() ?? {};
 
-      // Asegurar doc y role/rol por defecto si faltan (sin degradar admin)
-      Map<String, dynamic> data = snap.data() ?? {};
-      final hasRole = data.containsKey('role');
-      final hasRol  = data.containsKey('rol');
-      final alreadyAdmin = (data['role'] == 'admin') || (data['rol'] == 'admin');
+      if (!mounted) return; // <-- antes de mostrar Snack/navegar
 
-      if (!snap.exists || !hasRole || !hasRol) {
-        await ref.set({
-          if (!snap.exists) 'email': _emailCtrl.text.trim(),
-          if (!hasRole) 'role': alreadyAdmin ? 'admin' : 'user',
-          if (!hasRol)  'rol': alreadyAdmin ? 'admin' : 'alumno',
-          'activo': true,
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-        data = (await ref.get()).data() ?? {};
-      }
+      _showSnack(
+        'Sesión iniciada',
+        bg: Color(0xFF4CFF00),
+        icon: Icons.check_circle_outline,
+        duration: const Duration(milliseconds: 1200),
+      );
 
       final isAdmin = (data['role'] == 'admin') || (data['rol'] == 'admin');
-      if (isAdmin) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AdminHubScreen()));
-      } else {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const DashboardScreen()));
-      }
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => isAdmin ? const AdminHubScreen() : const MainTabbedScreen()),
+      );
     } on FirebaseAuthException catch (e) {
-      // 6) Manejamos errores de autenticación
       switch (e.code) {
         case 'user-not-found':
           _errorMessage = 'Usuario no encontrado';
@@ -81,13 +106,13 @@ class _LoginScreenState extends State<LoginScreen> {
           _errorMessage = 'Contraseña incorrecta';
           break;
         default:
-          _errorMessage = 'Error: ${e.message}';
+          _errorMessage = e.message ?? 'Error de autenticación';
       }
+      _showSnack(_errorMessage!, bg: Colors.redAccent, icon: Icons.error_outline);
     } catch (e) {
-      // 7) Otros errores
       _errorMessage = 'Error inesperado: $e';
+      _showSnack(_errorMessage!, bg: Colors.redAccent, icon: Icons.error_outline);
     } finally {
-      // 8) Desactivamos el indicador de carga
       if (mounted) setState(() => _loading = false);
     }
   }

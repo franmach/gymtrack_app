@@ -30,6 +30,75 @@ class _PerfilScreenState extends State<PerfilScreen> {
   final alturaController = TextEditingController();
   final disponibilidadController = TextEditingController();
 
+  String? _objetivoEdit; // <-- nuevo
+  static const List<String> _objetivosOpciones = [ // <-- opciones comunes
+    'Ganar músculo',
+    'Bajar de peso',
+    'Tonificar',
+    'Mejorar resistencia',
+    'Perder grasa',
+    'Mantener',
+    'Rehabilitación',
+  ];
+
+  // Helper SnackBar simple (sin AppMessenger)
+  void _snack(String msg, {Color bg = Colors.black87}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(msg),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          backgroundColor: bg,
+        ),
+      );
+  }
+
+  Future<void> _guardarPerfil(String uid) async {
+    // Parseos seguros
+    double? _toDouble(String s) =>
+        double.tryParse(s.replaceAll(',', '.').trim());
+    int? _toInt(String s) => int.tryParse(s.trim());
+
+    final updates = <String, dynamic>{};
+
+    final nombre = nombreController.text.trim();
+    final apellido = apellidoController.text.trim();
+    if (nombre.isNotEmpty) updates['nombre'] = nombre;
+    if (apellido.isNotEmpty) updates['apellido'] = apellido;
+
+    final peso = _toDouble(pesoController.text);
+    final altura = _toDouble(alturaController.text);
+    final disp = _toInt(disponibilidadController.text);
+    if (peso != null) updates['peso'] = peso;
+    if (altura != null) updates['altura'] = altura;
+    if (disp != null) updates['disponibilidadSemanal'] = disp;
+    if (_objetivoEdit != null && _objetivoEdit!.isNotEmpty) { // <-- guardar objetivo
+      updates['objetivo'] = _objetivoEdit;
+    }
+
+    if (updates.isEmpty) {
+      _snack('No hay cambios para guardar', bg: Colors.amber.shade300);
+      return;
+    }
+
+    try {
+      await FirebaseFirestore.instance.collection('usuarios').doc(uid).update(updates);
+      // Opcional: reflejar nombre en FirebaseAuth
+      final u = FirebaseAuth.instance.currentUser;
+      if (u != null && nombre.isNotEmpty) {
+        await u.updateDisplayName(nombre);
+      }
+      _snack('Perfil actualizado', bg: Colors.lightGreenAccent);
+      setState(() => modoEdicion = false);
+    } catch (e) {
+      _snack('Error al guardar: $e', bg: Colors.redAccent);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -188,6 +257,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                       (userData?['altura'] ?? '').toString();
                   disponibilidadController.text =
                       (userData?['disponibilidadSemanal'] ?? '').toString();
+                  _objetivoEdit = (objetivo == '—') ? null : objetivo; // <-- sincroniza
                 }
 
                 return SingleChildScrollView(
@@ -246,9 +316,21 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                       children: [
                                         Expanded(
                                           child: ElevatedButton.icon(
-                                            onPressed: () =>
-                                                setState(() => modoEdicion =
-                                                    !modoEdicion),
+                                            style: ElevatedButton.styleFrom(
+                                              minimumSize: const Size(0, 56),
+                                              padding: const EdgeInsets.symmetric(
+                                                  horizontal: 12),
+                                            ),
+                                            onPressed: () async {
+                                              if (uid == null) return;
+                                              if (!modoEdicion) {
+                                                // Entrar en edición
+                                                setState(() => modoEdicion = true);
+                                              } else {
+                                                // Guardar cambios
+                                                await _guardarPerfil(uid);
+                                              }
+                                            },
                                             icon: Icon(modoEdicion
                                                 ? Icons.check
                                                 : Icons.edit),
@@ -260,6 +342,11 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                         const SizedBox(width: 11),
                                         Expanded(
                                           child: OutlinedButton.icon(
+                                            style: OutlinedButton.styleFrom(
+                                              minimumSize: const Size(0, 56),
+                                              padding: const EdgeInsets.symmetric(
+                                                  horizontal: 12),
+                                            ),
                                             onPressed: () {
                                               Navigator.push(
                                                 context,
@@ -281,7 +368,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                         Expanded(
                                           child: OutlinedButton(
                                             style: OutlinedButton.styleFrom(
-                                              minimumSize: const Size(0, 56), // altura uniforme
+                                              minimumSize: const Size(0, 56),
+                                              padding: const EdgeInsets.symmetric(
+                                                  horizontal: 12),
                                             ),
                                             onPressed: () {
                                               if (uid == null) {
@@ -306,19 +395,19 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                                 ),
                                               );
                                             },
-                                            child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: const [
-                                                Icon(Icons.emoji_events),
-                                                SizedBox(width: 8),
-                                                Flexible(
-                                                  child: Text(
+                                            child: Center(
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: const [
+                                                  Icon(Icons.emoji_events),
+                                                  SizedBox(width: 8),
+                                                  Text(
                                                     'Logros',
                                                     maxLines: 1,
                                                     overflow: TextOverflow.ellipsis,
                                                   ),
-                                                ),
-                                              ],
+                                                ],
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -326,31 +415,36 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                         Expanded(
                                           child: ElevatedButton(
                                             style: ElevatedButton.styleFrom(
-                                              minimumSize: const Size(0, 56), // altura uniforme
+                                              minimumSize: const Size(0, 56),
+                                              padding: const EdgeInsets.symmetric(
+                                                  horizontal: 12),
                                             ),
                                             onPressed: () {
                                               Navigator.push(
                                                 context,
                                                 MaterialPageRoute(
-                                                  builder: (_) =>
-                                                      ConfigNotificacionesScreen(
-                                                          usuarioId: uid!),
+                                                  builder: (_) => ConfigNotificacionesScreen(usuarioId: uid!),
                                                 ),
                                               );
                                             },
-                                            child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
-                                              children: const [
-                                                Icon(Icons.alarm_on_sharp),
-                                                SizedBox(width: 8),
-                                                Flexible(
-                                                  child: Text(
-                                                    'Notificaciones',
-                                                    maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis, // no hace salto de línea
+                                            child: Center(
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  const Icon(Icons.alarm_on_sharp),
+                                                  const SizedBox(width: 8),
+                                                  Flexible(
+                                                    child: FittedBox(
+                                                      fit: BoxFit.scaleDown,
+                                                      alignment: Alignment.centerLeft,
+                                                      child: const Text(
+                                                        'Notificaciones',
+                                                        maxLines: 1,
+                                                      ),
+                                                    ),
                                                   ),
-                                                ),
-                                              ],
+                                                ],
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -432,18 +526,30 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                 const SizedBox(height: 8),
                                 TextFormField(
                                     controller: pesoController,
+                                    keyboardType: TextInputType.number, // opcional
                                     decoration: const InputDecoration(
                                         labelText: 'Peso (kg)')),
                                 const SizedBox(height: 8),
                                 TextFormField(
                                     controller: alturaController,
+                                    keyboardType: TextInputType.number, // opcional
                                     decoration: const InputDecoration(
                                         labelText: 'Altura (cm)')),
                                 const SizedBox(height: 8),
                                 TextFormField(
                                     controller: disponibilidadController,
+                                    keyboardType: TextInputType.number, // opcional
                                     decoration: const InputDecoration(
                                         labelText: 'Disponibilidad semanal')),
+                                const SizedBox(height: 8),
+                                DropdownButtonFormField<String>( // <-- nuevo campo Objetivo
+                                  value: _objetivoEdit?.isNotEmpty == true ? _objetivoEdit : null,
+                                  decoration: const InputDecoration(labelText: 'Objetivo'),
+                                  items: _objetivosOpciones
+                                      .map((o) => DropdownMenuItem(value: o, child: Text(o)))
+                                      .toList(),
+                                  onChanged: (v) => setState(() => _objetivoEdit = v),
+                                ),
                               ],
                             ],
                           ),
