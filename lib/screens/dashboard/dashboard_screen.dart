@@ -113,19 +113,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(
         title: const Text('Inicio'),
         elevation: 0,
-        actions: [
-          PopupMenuButton<String>(
-            onSelected: _onMenuSelect,
-            itemBuilder: (ctx) => [
-              const PopupMenuItem(value: 'profile', child: Text('Perfil')),
-              const PopupMenuItem(
-                  value: 'notifications', child: Text('Notificaciones')),
-              const PopupMenuItem(
-                  value: 'settings', child: Text('Configuración')),
-            ],
-            icon: const Icon(Icons.more_vert),
-          ),
-        ],
+        
       ),
       body: Center(
         child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
@@ -299,13 +287,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
-                                Text('Hola, Usuario',
-                                    style: TextStyle(
+                              children: [
+                                Text('Hola, $displayName',
+                                    style: const TextStyle(
                                         fontSize: 30,
                                         fontWeight: FontWeight.bold)),
-                                SizedBox(height: 4),
-                                Text('A por tu objetivo de hoy',
+                                const SizedBox(height: 4),
+                                const Text('A por tu objetivo de hoy',
                                     style: TextStyle(color: Colors.grey)),
                               ],
                             ),
@@ -505,15 +493,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const TimerScreen()),
-          );
-        },
-      ),
-      ElevatedButton.icon(
-        icon: const Icon(Icons.admin_panel_settings),
-        label: const Text('Panel Administrador'),
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const AdminHubScreen()),
           );
         },
       ),

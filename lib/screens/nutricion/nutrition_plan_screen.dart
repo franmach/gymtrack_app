@@ -408,13 +408,7 @@ class _NutritionPlanScreenState extends State<NutritionPlanScreen> {
                         }).toList(),
                       ),
 
-                      const SizedBox(height: 24),
-                      Center(
-                        child: ElevatedButton(
-                          onPressed: _savePlan,
-                          child: const Text('Guardar plan'),
-                        ),
-                      ),
+                      
                     ],
                   ],
                 ),

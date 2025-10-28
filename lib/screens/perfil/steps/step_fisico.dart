@@ -52,67 +52,70 @@ class _StepFisicoScreenState extends State<StepFisicoScreen> {
     final ctrl = context.watch<PerfilWizardController>();
     return Form(
       key: _form,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Datos físicos',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _pesoCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Peso (kg)'),
-              validator: _valPeso,
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _alturaCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Altura (cm)'),
-              validator: _valAltura,
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: _genero,
-              decoration: InputDecoration(labelText: 'Género'),
-              items: const [
-                DropdownMenuItem(value: 'Masculino', child: Text('Masculino')),
-                DropdownMenuItem(value: 'Femenino', child: Text('Femenino')),
-                DropdownMenuItem(value: 'Otro', child: Text('Otro')),
-                DropdownMenuItem(
-                    value: 'Prefiero no decirlo',
-                    child: Text('Prefiero no decirlo')),
-              ],
-              validator: (v) => v == null ? 'Campo obligatorio' : null,
-              onChanged: (v) => setState(() => _genero = v),
-            ),
-            const Spacer(),
-            Row(
+      child: LayoutBuilder(
+        builder: (context, _) {
+          final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+          return SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                OutlinedButton(
-                  onPressed: () => ctrl.back(),
-                  child: const Text('Atrás'),
+                const Text('Datos físicos',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _pesoCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Peso (kg)'),
+                  validator: _valPeso,
                 ),
-                const Spacer(),
-                ElevatedButton(
-                  onPressed: () {
-                    if (_form.currentState?.validate() ?? false) {
-                      ctrl.setFisicos(
-                        peso: double.parse(_pesoCtrl.text),
-                        altura: double.parse(_alturaCtrl.text),
-                        genero: _genero!,
-                      );
-                      ctrl.next();
-                    }
-                  },
-                  child: const Text('Siguiente'),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _alturaCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Altura (cm)'),
+                  validator: _valAltura,
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: _genero,
+                  decoration: const InputDecoration(labelText: 'Género'),
+                  items: const [
+                    DropdownMenuItem(value: 'Masculino', child: Text('Masculino')),
+                    DropdownMenuItem(value: 'Femenino', child: Text('Femenino')),
+                    DropdownMenuItem(value: 'Otro', child: Text('Otro')),
+                  ],
+                  onChanged: (v) => setState(() => _genero = v),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    OutlinedButton(
+                      onPressed: () => ctrl.back(),
+                      child: const Text('Atrás'),
+                    ),
+                    const Spacer(),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (_form.currentState?.validate() ?? false) {
+                          ctrl.setFisicos(
+                            peso: double.parse(_pesoCtrl.text),
+                            altura: double.parse(_alturaCtrl.text),
+                            genero: _genero!,
+                          );
+                          ctrl.next();
+                        }
+                      },
+                      child: const Text('Siguiente'),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

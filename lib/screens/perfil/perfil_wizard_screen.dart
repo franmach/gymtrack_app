@@ -90,6 +90,7 @@ class _PerfilWizardBodyState extends State<_PerfilWizardBody> {
       builder: (context, c, _) {
         _syncToPage(c.currentStep);
         return Scaffold(
+          resizeToAvoidBottomInset: true,
           appBar: AppBar(
             title: const Text('Completar Perfil'),
             leading: c.currentStep > 0

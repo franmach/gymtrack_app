@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:gymtrack_app/models/notificacion.dart';
+import 'package:gymtrack_app/screens/notificacion/notificaciones_screen.dart';
 import 'package:gymtrack_app/screens/rutina/mis_rutinas_screen.dart';
 import 'package:gymtrack_app/screens/auth/login_screen.dart';
 import 'package:intl/intl.dart';
@@ -295,6 +297,19 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                       },
                                       icon: const Icon(Icons.list),
                                       label: const Text('Mis Rutinas'),
+                                    ),
+                                    ElevatedButton.icon(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                ConfigNotificacionesScreen(usuarioId: uid!),
+                                          ),
+                                        );
+                                      },
+                                      icon: const Icon(Icons.list),
+                                      label: const Text('Notificaciones'),
                                     ),
                                   ],
                                 ),
