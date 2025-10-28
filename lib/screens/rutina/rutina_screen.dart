@@ -107,7 +107,7 @@ class _RutinaScreenState extends State<RutinaScreen> {
     return ListTile(
       title: Text(ej['nombre'] ?? ''),
       subtitle: Text(
-        "${ej['series']}x${ej['repeticiones']} - Descanso: ${ej['descanso_segundos']}s",
+        "Series ${ej['series']} X ${ej['repeticiones']} repeticiones - Peso: ${ej['peso'] ?? 'N/A'} kg",
       ),
     );
   } else if (ej is String) {

@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:gymtrack_app/screens/auth/login_screen.dart';
 
 class UsersAdminScreen extends StatefulWidget {
   const UsersAdminScreen({super.key});
@@ -35,6 +37,7 @@ class _UsersAdminScreenState extends State<UsersAdminScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final User? user = FirebaseAuth.instance.currentUser;
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -43,6 +46,24 @@ class _UsersAdminScreenState extends State<UsersAdminScreen> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.black,
+        actions: [
+          if (user != null)
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: () async {
+                try {
+                  await FirebaseAuth.instance.signOut();
+                } catch (e) {
+                  // no bloquear la navegación por un fallo al cerrar sesión
+                }
+                // Llevar al LoginScreen y limpiar la pila
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  (route) => false,
+                );
+              },
+            ),
+        ],
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: _col.orderBy('nombre', descending: false).snapshots(),

@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:gymtrack_app/screens/auth/login_screen.dart';
 
 /// Pantalla de Administración de Rutinas (por usuario)
 class RoutinesAdminScreen extends StatefulWidget {
@@ -18,6 +20,7 @@ class _RoutinesAdminScreenState extends State<RoutinesAdminScreen> {
 
   @override
   Widget build(BuildContext context) {
+        final User? user = FirebaseAuth.instance.currentUser;
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(

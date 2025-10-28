@@ -50,12 +50,7 @@ class _MainTabbedScreenState extends State<MainTabbedScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          _titles[_currentIndex],
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,

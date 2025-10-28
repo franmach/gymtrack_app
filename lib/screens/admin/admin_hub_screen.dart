@@ -1,17 +1,38 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import 'package:gymtrack_app/screens/admin/users/users_admin_screen.dart';
 import 'package:gymtrack_app/screens/admin/routines/routines_admin_screen.dart';
+import 'package:gymtrack_app/screens/auth/login_screen.dart';
 
 class AdminHubScreen extends StatelessWidget {
   const AdminHubScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+        final User? user = FirebaseAuth.instance.currentUser;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Panel Administrador'),
         centerTitle: true,
+         actions: [
+          if (user != null)
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: () async {
+                try {
+                  await FirebaseAuth.instance.signOut();
+                } catch (e) {
+                  // no bloquear la navegación por un fallo al cerrar sesión
+                }
+                // Llevar al LoginScreen y limpiar la pila
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  (route) => false,
+                );
+              },
+            ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),

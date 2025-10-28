@@ -11,8 +11,10 @@ class StepResumenScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final ctrl = context.watch<PerfilWizardController>();
     final d = ctrl.data;
-    return Padding(
-      padding: const EdgeInsets.all(20),
+    final bottomSafe = MediaQuery.of(context).padding.bottom;
+    return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomSafe),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -28,49 +30,51 @@ class StepResumenScreen extends StatelessWidget {
           _line('Duración', '${d.minPorSesion ?? '-'} min'),
           _line('Lesiones/Limitaciones',
               (d.textoLesiones?.isNotEmpty ?? false) ? 'Sí' : 'No'),
-          const Spacer(),
+          const SizedBox(height: 16),
           if (ctrl.saving)
             const Center(child: CircularProgressIndicator())
           else
             Row(
               children: [
-                OutlinedButton(
-                  onPressed: () => ctrl.back(),
-                  child: const Text('Atrás'),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => ctrl.back(),
+                    child: const Text('Atrás'),
+                  ),
                 ),
-                const Spacer(),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.check),
-                  label: const Text('Confirmar y generar rutina'),
-                  onPressed: () async {
-                    try {
-                      await ctrl.confirmarGuardar();
-
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Perfil guardado y rutina generada'),
-                          ),
-                        );
-                        // Volver al contenedor con tabs (mantiene el menú inferior)
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(
-                            builder: (_) => const MainTabbedScreen(),
-                          ),
-                          (r) => false,
-                        );
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.check),
+                    label: const Text('Confirmar y generar rutina'),
+                    onPressed: () async {
+                      try {
+                        await ctrl.confirmarGuardar();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Perfil guardado y rutina generada'),
+                            ),
+                          );
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(
+                              builder: (_) => const MainTabbedScreen(),
+                            ),
+                            (r) => false,
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Error: $e')),
+                          );
+                        }
                       }
-                    } catch (e) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error: $e')),
-                        );
-                      }
-                    }
-                  },
+                    },
+                  ),
                 ),
               ],
-            )
+            ),
         ],
       ),
     );
