@@ -21,7 +21,6 @@ class _MainTabbedScreenState extends State<MainTabbedScreen> {
   int _currentIndex = 0;
 
   late final List<Widget> _pages;
-  final List<String> _titles = ['Inicio', 'Educativo', 'Entrenar', 'Comidas', 'Perfil'];
 
   @override
   void initState() {
@@ -50,10 +49,9 @@ class _MainTabbedScreenState extends State<MainTabbedScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        
+
         backgroundColor: Colors.transparent,
         elevation: 0,
-        centerTitle: true,
       ),
       body: IndexedStack(
         index: _currentIndex,

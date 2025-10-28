@@ -91,9 +91,12 @@ class _PerfilScreenState extends State<PerfilScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                          const Icon(Icons.error_outline,
+                              size: 48, color: Colors.red),
                           const SizedBox(height: 12),
-                          const Text('Error al cargar perfil', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          const Text('Error al cargar perfil',
+                              style: TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold)),
                           const SizedBox(height: 8),
                           Text(err.toString(), textAlign: TextAlign.center),
                           const SizedBox(height: 12),
@@ -139,7 +142,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 final sesionesMesQuery = FirebaseFirestore.instance
                     .collection('sesiones')
                     .where('uid', isEqualTo: uid)
-                    .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(desde));
+                    .where('date',
+                        isGreaterThanOrEqualTo: Timestamp.fromDate(desde));
 
                 // Compatibilidad: construir mapa de stats con fallback
                 final stats = <String, dynamic>{};
@@ -199,7 +203,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
                               radius: 52,
                               backgroundImage: () {
                                 if (imagenUrl == null || imagenUrl.isEmpty) {
-                                  return const AssetImage('assets/images/profile_placeholder.png') as ImageProvider;
+                                  return const AssetImage(
+                                          'assets/images/profile_placeholder.png')
+                                      as ImageProvider;
                                 }
                                 // URL remota
                                 if (imagenUrl.startsWith('http')) {
@@ -215,7 +221,9 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                   if (f.existsSync()) return FileImage(f);
                                 } catch (_) {}
                                 // fallback
-                                return const AssetImage('assets/images/profile_placeholder.png') as ImageProvider;
+                                return const AssetImage(
+                                        'assets/images/profile_placeholder.png')
+                                    as ImageProvider;
                               }(),
                             ),
                             const SizedBox(height: 12),
@@ -227,89 +235,156 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                 style: Theme.of(context).textTheme.bodyMedium),
                             const SizedBox(height: 8),
                             Center(
-                              child: SizedBox(
-                                width: double.infinity,
-                                child: GridView.count(
-                                  shrinkWrap: true,
-                                  crossAxisCount: 2, // 2 columnas -> 2 arriba y 2 abajo
-                                  mainAxisSpacing: 12,
-                                  crossAxisSpacing: 12,
-                                  childAspectRatio: 4, // ajustar la altura de los botones
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  padding: EdgeInsets.zero,
+                              child: ConstrainedBox(
+                                constraints:
+                                    const BoxConstraints(maxWidth: 800),
+                                child: Column(
                                   children: [
-                                    ElevatedButton.icon(
-                                      onPressed: () => setState(
-                                          () => modoEdicion = !modoEdicion),
-                                      icon: Icon(
-                                          modoEdicion ? Icons.check : Icons.edit),
-                                      label:
-                                          Text(modoEdicion ? 'Guardar' : 'Editar'),
+                                    const SizedBox(height: 8),
+                                    // Fila 1
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: ElevatedButton.icon(
+                                            onPressed: () =>
+                                                setState(() => modoEdicion =
+                                                    !modoEdicion),
+                                            icon: Icon(modoEdicion
+                                                ? Icons.check
+                                                : Icons.edit),
+                                            label: Text(modoEdicion
+                                                ? 'Guardar'
+                                                : 'Editar'),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 11),
+                                        Expanded(
+                                          child: OutlinedButton.icon(
+                                            onPressed: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                    builder: (_) =>
+                                                        const HistorialScreen()),
+                                              );
+                                            },
+                                            icon: const Icon(Icons.history),
+                                            label: const Text('Historial'),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    OutlinedButton.icon(
-                                      onPressed: () {
-                                        Navigator.push(
+                                    const SizedBox(height: 12),
+                                    // Fila 2
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: OutlinedButton(
+                                            style: OutlinedButton.styleFrom(
+                                              minimumSize: const Size(0, 56), // altura uniforme
+                                            ),
+                                            onPressed: () {
+                                              if (uid == null) {
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  const SnackBar(
+                                                      content: Text(
+                                                          'Usuario no autenticado')),
+                                                );
+                                                return;
+                                              }
+                                              final repo = GamificationRepository(
+                                                  FirebaseFirestore.instance,
+                                                  FirebaseAuth.instance);
+                                              final service = GamificationService(
+                                                  repo);
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) => AchievementsScreen(
+                                                      uid: uid, repo: repo, service: service),
+                                                ),
+                                              );
+                                            },
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: const [
+                                                Icon(Icons.emoji_events),
+                                                SizedBox(width: 8),
+                                                Flexible(
+                                                  child: Text(
+                                                    'Logros',
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 11),
+                                        Expanded(
+                                          child: ElevatedButton(
+                                            style: ElevatedButton.styleFrom(
+                                              minimumSize: const Size(0, 56), // altura uniforme
+                                            ),
+                                            onPressed: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) =>
+                                                      ConfigNotificacionesScreen(
+                                                          usuarioId: uid!),
+                                                ),
+                                              );
+                                            },
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: const [
+                                                Icon(Icons.alarm_on_sharp),
+                                                SizedBox(width: 8),
+                                                Flexible(
+                                                  child: Text(
+                                                    'Notificaciones',
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis, // no hace salto de línea
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    // Botón que ocupa las 2 columnas (ancho completo)
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton.icon(
+                                        icon: const Icon(Icons.list, size: 30),
+                                        label: const Text(
+                                          'Mis rutinas',
+                                          style: TextStyle(
+                                              fontSize: 22,
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 15),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(24),
+                                          ),
+                                        ),
+                                        onPressed: () {
+                                          Navigator.push(
                                             context,
                                             MaterialPageRoute(
                                                 builder: (_) =>
-                                                    const HistorialScreen()));
-                                      },
-                                      icon: const Icon(Icons.history),
-                                      label: const Text('Historial'),
-                                    ),
-                                    OutlinedButton.icon(
-                                      onPressed: () {
-                                        if (uid == null) {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            const SnackBar(
-                                                content: Text(
-                                                    'Usuario no autenticado')),
+                                                    const MisRutinasScreen()),
                                           );
-                                          return;
-                                        }
-                                        final repo = GamificationRepository(
-                                            FirebaseFirestore.instance,
-                                            FirebaseAuth.instance);
-                                        final service = GamificationService(repo);
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => AchievementsScreen(
-                                                uid: uid,
-                                                repo: repo,
-                                                service: service),
-                                          ),
-                                        );
-                                      },
-                                      icon: const Icon(Icons.emoji_events),
-                                      label: const Text('Logros'),
-                                    ),
-                                    ElevatedButton.icon(
-                                      onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) =>
-                                                const MisRutinasScreen(),
-                                          ),
-                                        );
-                                      },
-                                      icon: const Icon(Icons.list),
-                                      label: const Text('Mis Rutinas'),
-                                    ),
-                                    ElevatedButton.icon(
-                                      onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) =>
-                                                ConfigNotificacionesScreen(usuarioId: uid!),
-                                          ),
-                                        );
-                                      },
-                                      icon: const Icon(Icons.list),
-                                      label: const Text('Notificaciones'),
+                                        },
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -339,7 +414,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                   subtitle: Text(email),
                                 ),
                                 ListTile(
-                                  leading: const Icon(Icons.align_horizontal_left),
+                                  leading:
+                                      const Icon(Icons.align_horizontal_left),
                                   title: Text('Nivel'),
                                   subtitle: Text(nivel.toString()),
                                 ),
@@ -381,8 +457,12 @@ class _PerfilScreenState extends State<PerfilScreen> {
                         stream: sesionesMesQuery.snapshots(),
                         builder: (context, sSnap) {
                           // valores por defecto mientras llega el stream
-                          int sesiones = (stats['sesionesMes'] is num) ? (stats['sesionesMes'] as num).toInt() : 0;
-                          int minutos = (stats['minutosMes'] is num) ? (stats['minutosMes'] as num).toInt() : 0;
+                          int sesiones = (stats['sesionesMes'] is num)
+                              ? (stats['sesionesMes'] as num).toInt()
+                              : 0;
+                          int minutos = (stats['minutosMes'] is num)
+                              ? (stats['minutosMes'] as num).toInt()
+                              : 0;
 
                           if (sSnap.hasData) {
                             final docs = sSnap.data!.docs;
@@ -390,9 +470,13 @@ class _PerfilScreenState extends State<PerfilScreen> {
                             minutos = 0;
                             for (final d in docs) {
                               final data = d.data() as Map<String, dynamic>;
-                              final rawDur = data['duracionMin'] ?? data['durationMin'] ?? 0;
-                              if (rawDur is num) minutos += rawDur.toInt();
-                              else if (rawDur is String) minutos += int.tryParse(rawDur) ?? 0;
+                              final rawDur = data['duracionMin'] ??
+                                  data['durationMin'] ??
+                                  0;
+                              if (rawDur is num)
+                                minutos += rawDur.toInt();
+                              else if (rawDur is String)
+                                minutos += int.tryParse(rawDur) ?? 0;
                             }
                           }
 
@@ -407,18 +491,23 @@ class _PerfilScreenState extends State<PerfilScreen> {
                                   Expanded(
                                       child: _kpiCard(
                                           'Racha',
-                                          stats['rachaActual']?.toString() ?? '0',
+                                          stats['rachaActual']?.toString() ??
+                                              '0',
                                           Icons.local_fire_department)),
                                   const SizedBox(width: 8),
                                   Expanded(
-                                      child: _kpiCard('Sesiones (mes)', sesiones.toString(), Icons.calendar_month)),
+                                      child: _kpiCard(
+                                          'Sesiones (mes)',
+                                          sesiones.toString(),
+                                          Icons.calendar_month)),
                                 ],
                               ),
                               const SizedBox(height: 12),
                               Row(
                                 children: [
                                   Expanded(
-                                    child: _kpiCard('Minutos (mes)', minutos.toString(), Icons.timer),
+                                    child: _kpiCard('Minutos (mes)',
+                                        minutos.toString(), Icons.timer),
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
@@ -614,7 +703,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
         return Column(
           children: logros.map((l) {
             final otorgado = l.otorgadoEn;
-            final subtitleText = l.descripcion + '\n${dateFmt.format(otorgado)}';
+            final subtitleText =
+                l.descripcion + '\n${dateFmt.format(otorgado)}';
             return Card(
               child: ListTile(
                 leading: l.badge != null
