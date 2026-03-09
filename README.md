@@ -1,160 +1,160 @@
-GymTrack
+# GymTrack
+### Sistema inteligente para gestión de gimnasios
 
-GymTrack es una aplicación móvil diseñada para la gestión integral de gimnasios. Permite administrar usuarios, generar rutinas personalizadas, realizar seguimiento del entrenamiento y gestionar la información del gimnasio desde un panel administrativo.
-El sistema integra servicios de inteligencia artificial para generar rutinas de entrenamiento adaptadas a los objetivos y disponibilidad del usuario.
+**Proyecto de tesis – Analista Programador**  
+**Universidad CLAEH (CEI) – 2025**
 
-Tabla de Contenidos
+---
 
-Descripción General
-Tecnologías Utilizadas
-Características
-Arquitectura del Sistema
-Instalación
-Uso
-Capturas de Pantalla
-Autor
+## Descripción General
 
-Descripción General
+GymTrack es una aplicación móvil diseñada para la gestión integral de gimnasios. Permite administrar usuarios, generar rutinas de entrenamiento personalizadas y gestionar información del gimnasio desde un entorno digital centralizado.
 
-GymTrack fue desarrollado como proyecto final de la carrera Analista Programador en la Universidad CLAEH (CEI).
+El sistema incorpora servicios de inteligencia artificial para generar rutinas adaptadas a las características de cada usuario, considerando factores como objetivos de entrenamiento, nivel de experiencia y disponibilidad semanal.
 
-El objetivo del proyecto es ofrecer una plataforma digital que permita a gimnasios gestionar de forma eficiente la información de sus socios, generar rutinas personalizadas y mejorar la experiencia de entrenamiento mediante el uso de inteligencia artificial.
+Este proyecto fue desarrollado como **tesis final de la carrera Analista Programador**, con el objetivo de aplicar conocimientos de desarrollo móvil, backend serverless e integración de APIs externas.
 
-La aplicación permite a los usuarios crear su perfil, registrar sus objetivos y disponibilidad de entrenamiento, y obtener rutinas generadas automáticamente utilizando modelos de IA. Además, incluye funcionalidades administrativas para gestionar usuarios y supervisar la actividad dentro del gimnasio.
+---
 
-Tecnologías Utilizadas
-Lenguajes
+## Tecnologías Utilizadas
 
-Dart
-JavaScript
+### Lenguajes
+- Dart
+- JavaScript
 
-Frameworks y Tecnologías
+### Frameworks y Tecnologías
+- Flutter
+- Firebase Authentication
+- Firebase Firestore
+- Firebase Storage
+- Firebase Cloud Functions
 
-Flutter
-Firebase Authentication
-Firebase Firestore
-Firebase Storage
-Firebase Cloud Functions
+### Inteligencia Artificial
+- Gemini API (Google Generative AI)
 
-Inteligencia Artificial
+### Bases de Datos
+- Firestore (NoSQL)
 
-Gemini API (Google Generative AI)
+### Herramientas
+- Git
+- Firebase Console
 
-Bases de Datos
+---
 
-Firestore (NoSQL)
+## Características Principales
 
-Herramientas
+### Gestión de Usuarios
+Sistema de registro y autenticación de usuarios utilizando **Firebase Authentication**, permitiendo la creación y administración segura de cuentas.
 
-Git
-Firebase Console
+### Generación de Rutinas con Inteligencia Artificial
+El sistema permite generar rutinas de entrenamiento personalizadas utilizando inteligencia artificial en función de:
 
-Características
-Gestión de usuarios
+- objetivo del usuario
+- disponibilidad semanal
+- nivel de experiencia
 
-Registro y autenticación de usuarios mediante Firebase Authentication.
+### Gestión de Perfiles
+Los usuarios pueden completar su perfil con información relevante para personalizar las rutinas y mejorar la experiencia de entrenamiento.
 
-Generación de rutinas con IA
+### Sistema de Roles
+Control de acceso que diferencia entre:
 
-Sistema que genera rutinas de entrenamiento personalizadas utilizando inteligencia artificial en función de:
+- usuarios del gimnasio
+- administradores del sistema
 
-objetivo del usuario
-
-disponibilidad semanal
-
-nivel de experiencia
-
-Gestión de perfiles
-
-Los usuarios pueden completar su perfil con información relevante para la generación de rutinas.
-
-Sistema de roles
-
-Control de acceso para diferenciar entre usuarios y administradores.
-
-Panel administrativo
-
+### Panel Administrativo
 Permite gestionar usuarios y supervisar información relevante del sistema.
 
-Arquitectura basada en servicios
+### Arquitectura basada en servicios
+Uso de una arquitectura **serverless** mediante Firebase para separar la lógica de negocio de la aplicación móvil.
 
-Uso de Firebase y Cloud Functions para separar lógica de negocio y gestión de datos.
+---
 
-Arquitectura del Sistema
+## Arquitectura del Sistema
 
-La aplicación sigue una arquitectura basada en servicios utilizando Firebase como backend serverless.
+La aplicación utiliza Firebase como backend serverless.
 
-Componentes principales:
+### Componentes principales
 
-Flutter App → interfaz móvil para usuarios.
+**Flutter App**  
+Aplicación móvil utilizada por los usuarios.
 
-Firebase Authentication → gestión de autenticación y sesiones.
+**Firebase Authentication**  
+Gestión de autenticación y sesiones.
 
-Firestore → almacenamiento de datos de usuarios y rutinas.
+**Firestore**  
+Base de datos NoSQL para almacenar usuarios y rutinas.
 
-Cloud Functions → lógica de negocio y generación de rutinas.
+**Cloud Functions**  
+Funciones backend para lógica de negocio.
 
-Gemini API → generación de contenido mediante inteligencia artificial.
+**Gemini API**  
+Servicio de inteligencia artificial para generación de rutinas.
 
-Instalación
+---
 
-Clonar el repositorio:
+## Instalación
 
+### 1. Clonar el repositorio
+
+```bash
 git clone https://github.com/tuusuario/gymtrack.git
+```
 
-Acceder al proyecto:
+### 2. Acceder al proyecto
 
+```bash
 cd gymtrack
+```
 
-Instalar dependencias:
+### 3. Instalar dependencias
 
+```bash
 flutter pub get
+```
 
-Configurar Firebase:
+### 4. Configurar Firebase
 
-Crear un proyecto en Firebase.
+1. Crear un proyecto en **Firebase Console**
+2. Habilitar **Authentication y Firestore**
+3. Descargar el archivo de configuración
+4. Integrarlo en el proyecto Flutter
 
-Habilitar Authentication y Firestore.
+### 5. Ejecutar la aplicación
 
-Descargar el archivo de configuración de Firebase.
-
-Integrarlo en el proyecto Flutter.
-
-Ejecutar la aplicación:
-
+```bash
 flutter run
-Uso
-Usuarios
+```
+---
+## Uso
 
-Registrarse en la aplicación.
+### Usuarios
 
-Completar su perfil con objetivos y disponibilidad.
+Los usuarios de la aplicación pueden:
 
-Generar rutinas personalizadas utilizando inteligencia artificial.
+- Registrarse en la aplicación mediante autenticación segura.
+- Completar su perfil indicando objetivos y disponibilidad de entrenamiento.
+- Generar rutinas personalizadas utilizando inteligencia artificial.
+- Consultar y seguir su plan de entrenamiento.
 
-Consultar su plan de entrenamiento.
+### Administradores
 
-Administradores
+Los administradores del sistema pueden:
 
-Gestionar usuarios registrados.
+- Gestionar usuarios registrados.
+- Supervisar información general del sistema.
+- Administrar rutinas y datos asociados al gimnasio.
 
-Supervisar información del sistema.
+---
+## Capturas de Pantalla
+<img width="373" height="667" alt="0 (1)" src="https://github.com/user-attachments/assets/29008e9c-9797-4260-89c2-6f1dd6c93527" />
+<img width="375" height="666" alt="0 (2)" src="https://github.com/user-attachments/assets/d651579c-0ee1-4669-bfd0-d71daef9bb5c" />
+<img width="390" height="847" alt="0 (3)" src="https://github.com/user-attachments/assets/a4453fa7-ab03-4f02-97c2-94ace42debd5" />
+<img width="390" height="788" alt="0" src="https://github.com/user-attachments/assets/36a4f8a8-79d2-4232-ba5c-2132170e5936" />
 
-Administrar datos relacionados con rutinas.
+<img width="391" height="850" alt="0 (4)" src="https://github.com/user-attachments/assets/d7e78316-0967-43fb-9d70-807db951fc33" />
 
-Capturas de Pantalla
-
-image image image image image
-
-Autor
-
-Francisco Machado
-Analista Programador – Universidad CLAEH
-
-Email: franmach20@outlook.com
-
-LinkedIn:
-https://www.linkedin.com/in/francisco-machado-almandos-a1a826230
-
-GitHub:
-https://github.com/franmach
+<img width="391" height="851" alt="0 (5)" src="https://github.com/user-attachments/assets/1270dd3e-4564-49a6-ac35-c6749fe6908d" />
+<img width="392" height="852" alt="0 (6)" src="https://github.com/user-attachments/assets/5c110ea3-e0ab-4114-b88c-0a59e7f5cd95" />
+<img width="392" height="847" alt="0 (7)" src="https://github.com/user-attachments/assets/d2b539c8-5866-4adf-9d45-cc34ca192c59" />
+<img width="390" height="847" alt="0 (8)" src="https://github.com/user-attachments/assets/960b9df6-0267-4fd4-b6b2-4ff6a4c1e222" />
